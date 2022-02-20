@@ -10,7 +10,7 @@
     "outDir": "./lib",
     "strict": true,
     "types": [
-      "@adonisjs/http-server/build/adonis-typings"
+      "@adonisjs/core"
     ],
     "resolveJsonModule": true,
     "plugins": [
