@@ -14,7 +14,7 @@ import i18n from './i18n'
 /**
  * Human names for validator rules.
  */
-const ValidatorRuleNames = i18n.ValidatorRuleNames;
+const Strings = i18n.Validator;
 
 /**
  * Adonis validator rule to treat an optional parameter as
@@ -44,7 +44,7 @@ export default class Validator {
                 let opts = '';
                 if (rule === 'enum') opts = options.choices.toString;
                 else if (rule === 'minLength') opts = options.minLength;
-                return `${address.join('.')} ${ValidatorRuleNames[rule as never]}${opts}`
+                return `${address.join('.')} ${Strings.RuleNames[rule as never]}${opts}`
             }
         };
     }    
@@ -65,7 +65,7 @@ export class ValidationException extends Exception {
         scope: string,
         errors: Record<string,string|undefined>[]
     ) {
-        super(scope, `Falha de Validação`, errors, Status.BADREQUEST, ValidationException.code);
+        super(scope, Strings.ExceptionMessage, errors, Status.BADREQUEST, ValidationException.code);
     }
 
     static Error(scope: string, e: any) {
@@ -86,7 +86,7 @@ export class ValidationException extends Exception {
     static Required(scope: string, key: string, name: string) {
         return new ValidationException(scope, [{
             key: key,
-            message: `${name} requerido(a)`
+            message: name + Strings.RuleNames.required
         }]);
     }
 

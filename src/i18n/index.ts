@@ -1,18 +1,21 @@
 export interface i18nStrings {
 
-    ValidatorRuleNames: {
-        required: string,
-        requiredWhen: string,
-        requiredIfNotExists: string,
-        requiredIfExists: string,
-        string: string,
-        number: string,
-        enum: string,
-        boolean: string,
-        date: string,
-        object: string,
-        array: string,
-        minLength: string
+    Validator: {
+        ExceptionMessage: string,
+        RuleNames: {
+            required: string,
+            requiredWhen: string,
+            requiredIfNotExists: string,
+            requiredIfExists: string,
+            string: string,
+            number: string,
+            enum: string,
+            boolean: string,
+            date: string,
+            object: string,
+            array: string,
+            minLength: string
+        }
     }
 
 }
