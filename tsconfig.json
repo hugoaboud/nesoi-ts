@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": [
+      "ES2020"
+    ],
+    "declaration": true,
+    "removeComments": false,
+    "outDir": "./lib",
+    "strict": true,
+    "types": [
+      "@adonisjs/http-server/build/adonis-typings"
+    ],
+    "resolveJsonModule": true,
+    "plugins": [
+      {
+        "transform": "./transformers/ioc.ts"
+      },
+    ],
+
+    "noUnusedLocals": true,
+    "skipLibCheck": true,
+    "incremental": true,
+    "noUnusedParameters": true,
+    "moduleResolution": "node",
+    "strictNullChecks": true,
+    "allowSyntheticDefaultImports": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "esModuleInterop": true
+  },
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "scripts",
+    "docs",
+    "transformers"
+  ]
+}
+  
