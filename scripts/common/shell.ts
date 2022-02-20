@@ -5,10 +5,11 @@ export default class Shell {
     /**
      * Execute command in shell.
      */
-    static cmd(cwd: string, cmd: string, args: string[] = [], stdin?: string[], stdout = false) {
-        console.log(cwd + '$ ' + cmd + ' ' + args.join(' '))
+    static cmd(cwd: string, cmd: string, stdin?: string[], stdout = false) {
+        console.log(cwd + '$ ' + cmd)
         return new Promise(resolve => {
-            let child = spawn(cmd, args, {shell: true, stdio: [stdin?null:process.stdin, stdout?null:process.stdout, (process as any).error], cwd})
+            let cmds = cmd.split(' ');
+            let child = spawn(cmds[0], cmds.slice(1), {shell: true, stdio: [stdin?null:process.stdin, stdout?null:process.stdout, (process as any).error], cwd})
             if (stdin) stdin.map(input => child.stdin.write(input + '\n'))
             let out: string[] = []
             if (stdout) {
