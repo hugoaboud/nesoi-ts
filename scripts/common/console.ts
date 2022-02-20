@@ -1,4 +1,4 @@
-//import readline from 'readline'
+import * as readline from 'readline'
 import pack from '../../package.json'
 
 export enum Color {
@@ -27,20 +27,20 @@ export default class Console {
     }
 
     // Ask a question and wait for the answer
-    // static async question(text: string, defaul='', prefix='') {
-    //     return new Promise(resolve => {
-    //         const rl = readline.createInterface({
-    //             input: process.stdin,
-    //             output: process.stdout
-    //         });
-    //         rl.question(this.colored(text + ' ', 'cyan')+prefix, val => {
-    //             if (!val.length) return;
-    //             rl.close();
-    //             resolve(val);
-    //         })
-    //         rl.write(defaul);
-    //     })
-    // }
+    static async question(text: string, defaul='', prefix=''): Promise<string> {
+        return new Promise(resolve => {
+            const rl = readline.createInterface({
+                input: process.stdin,
+                output: process.stdout
+            });
+            rl.question(this.colored(text + ' ', 'cyan')+prefix, val => {
+                if (!val.length) return;
+                rl.close();
+                resolve(val);
+            })
+            rl.write(defaul);
+        })
+    }
 
     // Prints a step message to the terminal
     static step(msg: string) {
