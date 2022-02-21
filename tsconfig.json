@@ -10,7 +10,8 @@
     "outDir": "./lib",
     "strict": true,
     "types": [
-      "@adonisjs/core"
+      "@adonisjs/core",
+      "@adonisjs/lucid"
     ],
     "resolveJsonModule": true,
     "plugins": [
