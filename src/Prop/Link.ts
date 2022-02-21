@@ -1,12 +1,12 @@
-import { LinkException } from "./Exceptions";
-import Node, { TNode } from "./Node";
-import { Prop } from "./Prop";
+import { LinkException } from "../Exceptions";
+import Node, { TNode } from "../Node";
+import { Prop } from ".";
 
 export default class Link implements Prop {
 
     source: 'model'
     async = true
-    
+
     constructor(
         public fn: (data: Record<string,any>, key: string, node: Node<any,any>) => any,
         public field: string,
