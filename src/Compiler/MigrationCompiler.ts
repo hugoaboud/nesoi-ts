@@ -12,7 +12,7 @@ const Types = {
 
 export default class MigrationCompiler {
 
-    static CompileProp(prop: $.Prop) {
+    static CompileProp(prop: $.Prop.I) {
         let type = Types[prop.type];
         let nullable = prop.opts.nullable?'':'.notNullable()';
         return `\t\t\ttable.${type}('${prop.name}')${nullable}\n`;
@@ -31,8 +31,8 @@ export default class MigrationCompiler {
         buf += `\t\tthis.schema.createTable(this.tableName, (table) => {\n`;
         buf += `\t\t\ttable.increments('id')\n\n`;
 
-        schema.props.forEach(prop => {
-            buf += this.CompileProp(prop);
+        Object.values(schema.props).forEach(prop => {
+            buf += this.CompileProp(prop as any);
         })
 
         buf += `\n\t\t\ttable.integer('created_by')\n`;

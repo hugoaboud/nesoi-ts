@@ -12,7 +12,7 @@ const Types = {
 
 export default class ModelCompiler {
     
-    static CompileProp(prop: $.Prop) {        
+    static CompileProp(prop: $.Prop.I) {        
         let type = Types[prop.type];
         let nullable = prop.opts.nullable?'?':'';
         let source = '';
@@ -33,8 +33,8 @@ export default class ModelCompiler {
         buf += `export default class ${class_name} extends BaseModel {\n`;
         buf += `\tpublic static table = '${Plural(schema.name)}'\n\n`;
 
-        schema.props.forEach(prop => {
-            buf += this.CompileProp(prop);
+        Object.values(schema.props).forEach(prop => {
+            buf += this.CompileProp(prop as any);
         })
 
         buf += `}`;

@@ -1,75 +1,172 @@
+import { Status } from "../Common/Status";
+import { Camelize } from "../Common/String";
+import i18n from "../i18n";
+
+const Strings = i18n.Schema;
+
 export namespace $ {
 
-    export type PropType = 'string' | 'int' | 'float';
-    export type PropScope = 'public' | 'protected' | 'private';
-    export type PropFKey = {
-        table: string
-        column: string
-    };
-
-    export type Prop = {
-        alias: string
-        name: string
-        type: PropType
-        opts: {
-            scope: PropScope
+    /* Props */
+    export function Prop(alias: string): Prop.T {
+        return new Prop.T(alias);
+    }
+    
+    export namespace Prop {
+        type Type = 'string' | 'int' | 'float';
+        type Scope = 'public' | 'protected' | 'private';
+        type Opts = {
+            scope: Scope
             nullable: boolean
             default?: any
         }
+        // type FKey = {
+        //     table: string
+        //     column: string
+        // };
+        export interface I {
+            name: string
+            alias: string
+            type: Type
+            opts: Opts
+            build: (name: string) => void
+        }
+        export class T {
+        
+            protected name!: string
+            protected type!: Type
+            protected opts: Opts
+    
+            constructor(
+                protected alias: string
+            ) {
+                this.opts = {
+                    scope: 'public',
+                    nullable: false
+                }
+            }
 
-        default: (val: any) => Prop
-        nullable: () => Prop
-        protected: () => Prop
-        private: () => Prop
-    }
-    export namespace Prop {
-
-        const Opts = () => ({
-            scope: 'public' as PropScope,
-            default: undefined,
-            nullable: false
-        })
-
-        const Methods = {
-            default: function (this: Prop, val: any) {
+            protected build(name: string) {
+                this.name = name;
+            }
+    
+            default(val: any) {
                 this.opts.default = val;
                 return this
-            },
-            nullable: function (this: Prop) {
+            }
+            nullable() {
                 this.opts.nullable = true;
                 return this;
-            },
-            protected: function (this: Prop) {
+            }
+            protected() {
                 this.opts.scope = 'protected';
                 return this;
-            },
-            private: function (this: Prop) {
+            }
+            private() {
                 this.opts.scope = 'private';
                 return this;
             }
-
-        } as Prop
-
-        export function string(alias: string, name: string):Prop {
-            return { ...Methods, alias, name, type: 'string', opts:Opts() }
+    
+            string(): Prop.T { 
+                this.type = 'string';
+                return this;
+            }
+            int(): Prop.T { 
+                this.type = 'int';
+                return this;
+            }
+            float(): Prop.T { 
+                this.type = 'float';
+                return this;
+            }
         }
+    }
+    
+    /* Rules */
 
-        export function int(alias: string, name: string):Prop {
-            return { ...Methods, alias, name, type: 'int', opts:Opts() }
+    
+    export function Rule(prop: string): Rule.T {
+        return new Rule.T(prop);
+    }
+    export namespace Rule {
+
+        type Scope = {
+            create: boolean
+            update: boolean
         }
+        type ExceptionArg = {
+            name: string
+            type: string
+        }
+        export type Exception = {
+            name: string
+            args: ExceptionArg[]
+            status: Status
+            msg: string
+        }
+        export interface I {
+            scope: Scope
+            code: string
+            exception?: Exception
+            build: (schema: $.Node) => void
+        }
+        export class T {
+            protected scope: Scope
+            protected code!: string
+            protected exception?: Exception
+            protected fn!: (prop: $.Prop.I) => {code: string, exception?: Exception}
 
-        export function float(alias: string, name: string):Prop {
-            return { ...Methods, alias, name, type: 'float', opts:Opts() }
+            constructor(
+                protected prop: string
+            ) {
+                this.scope = {
+                    create: false,
+                    update: false
+                }
+            }
+
+            protected build(schema: $.Node) {
+                let {code, exception} = this.fn(schema.props[this.prop] as any as Prop.I);
+                this.code = code;
+                this.exception = exception;
+            }
+
+            createOnly() {
+                (this as any).scope.create = true;
+                (this as any).scope.update = false;
+            }
+            updateOnly() {
+                (this as any).scope.create = false;
+                (this as any).scope.update = true;
+            }
+            
+            greaterThan(this: Rule.T, val: number): Rule.T {
+                this.fn = (prop: Prop.I) => {
+                    let exception_name = Camelize(prop.name)+'NotGreaterThan'+(val.toString().replace('.','_'));
+                    return {
+                        code: `if (input.${prop.name} <= ${val}) throw Exception.${exception_name}(input.${prop.name})`,
+                        exception: {
+                            name: exception_name,
+                            args: [{name: 'val', type: 'number'}],
+                            status: Status.BADREQUEST,
+                            msg: `${prop.alias} (\${val}) ${Strings.RuleExceptions.greaterThan} ${val}`
+                        }
+                    }
+                }
+                return this;
+            }
         }
 
     }
-        
-    export interface Node {
+
+    /* Node */
+
+    export type Node = {
     
         alias: string
         name: string
     
-        props: Prop[]
+        props: Record<string,Prop.T>
+        rules: Rule.T[]
     
     }
 
