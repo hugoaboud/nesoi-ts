@@ -24,6 +24,10 @@ export const RequiredOnCreate = [rules.requiredIfNotExists('id'), rules.required
 
 export type ValidationRules = Record<string, {t?: any, getTree(): SchemaObject|SchemaArray|SchemaLiteral}>
 export type ValidationNames = Record<string, string>
+export type ValidationSchema = {
+    rules: ValidationRules,
+    names: ValidationNames
+}
 
 export default class Validator {   
 
@@ -33,14 +37,13 @@ export default class Validator {
      * Build a validator from a schema with optional custom messages.
      */
     constructor(
-        protected rules: ValidationRules,
-        protected names: ValidationNames,
+        protected schema: ValidationSchema,
         messages?: Record<string,string>
     ) {
         this.messages = {
             ...(messages || {}),
             '*': (field:string, rule:string, _ptr:any, options:Record<string,any>) => {
-                let address = field.split('.').map(a => names[a] || a);
+                let address = field.split('.').map(a => schema.names[a] || a);
                 let opts = '';
                 if (rule === 'enum') opts = options.choices.toString;
                 else if (rule === 'minLength') opts = options.minLength;
@@ -51,7 +54,7 @@ export default class Validator {
     
     async Validate(scope: string, data: Record<string, any>) {
         try {
-            await validator.validate({ schema: schema.create(this.rules), messages: this.messages, data });
+            await validator.validate({ schema: schema.create(this.schema.rules), messages: this.messages, data });
         }
         catch (e) { throw ValidationException.Error(scope, e); }
     }
