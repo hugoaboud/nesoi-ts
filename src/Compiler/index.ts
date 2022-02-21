@@ -27,39 +27,44 @@ export default class Compiler {
     }
 
     static async LoadNodeSchemas(): Promise<$.Node[]> {
-
         let file_names = fs.readdirSync(this.path.schemas);
         file_names = file_names.filter(file_name => 
             fs.lstatSync(path.join(this.path.schemas,file_name)).isFile()
         )
 
-        let files = await Promise.all(file_names.map(async file_name => {
+        let schemas = await Promise.all(file_names.map(async file_name => {
             let module = file_name.replace('.ts','');
             //return (await import(path.join('..','..',this.path.schemas,module))).default;
             return (await import(path.join(process.cwd(),this.path.schemas,module))).default;
         }))
 
-        return files;
+        return schemas;
+    }
+
+    static BuildSchema(schema: $.Node) {
+        Object.keys(schema.props).forEach(name => {
+            (schema.props[name] as any as $.Prop.I).build(name)
+        })
+        schema.rules.forEach(rule => {
+            (rule as any as $.Rule.I).build(schema)
+        })
     }
     
-    static async Compile() {
-        
+    static async Compile() {        
         Console.info('Compiler', '@start')
         this.CreateBuildDir();
-
         let schemas = await this.LoadNodeSchemas();
-
+        
         schemas.map(schema => {
 
             Console.info('Compiler', `Compiling ${Console.colored(schema.alias,'lightcyan')} ${Console.colored('('+schema.name+')','cyan')}`)
+
+            this.BuildSchema(schema);
 
             MigrationCompiler.Compile(schema, this.path.build.migrations);
             ModelCompiler.Compile(schema, this.path.build.models);
             NodeCompiler.Compile(schema, this.path.build.models);
 
         })
-
-
     }
-
 }

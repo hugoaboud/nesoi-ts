@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import path from 'path';
 import Console from '../Common/Console';
+import { Status } from '../Common/Status';
 import { Camelize } from '../Common/String';
 import { $ } from './Schema';
 
@@ -19,10 +20,12 @@ export default class NodeCompiler {
         let model_name = Camelize(schema.name) + 'Model'
 
         let buf = `import ${model_name} from './${model_name}'\n`;
-        buf += `import Node, { NodeEntity } from 'adonis-graph-db/lib/Node'\n`;
+        buf += `import { Exception as BaseException } from '@adonisjs/core/build/standalone'\n`;
         buf += `import { schema } from '@ioc:Adonis/Core/Validator'\n`;
         buf += `import { Prop } from 'adonis-graph-db/lib/Prop'\n`;
+        buf += `import Node, { NodeEntity } from 'adonis-graph-db/lib/Node'\n`;
         buf += `import { isEmpty, RequiredOnCreate } from 'adonis-graph-db/lib/Validator'\n`;
+        buf += `import { Status } from 'adonis-graph-db/lib/Common/Status'\n`;
 
         buf += '\n';
         return buf;
@@ -40,7 +43,7 @@ export default class NodeCompiler {
 
     /* Input */
 
-    static CompileInputRuleProp(prop: $.Prop) {
+    static CompileInputRuleProp(prop: $.Prop.I) {
         if (prop.opts.scope !== 'public') return null;
         let args = '';
         if (!prop.opts.default) {
@@ -51,14 +54,15 @@ export default class NodeCompiler {
         return buf;
     }
 
-    static CompileInputNameProp(prop: $.Prop) {
+    static CompileInputNameProp(prop: $.Prop.I) {
+        if (prop.opts.scope !== 'public') return null;
         let buf = `\t\t\t${prop.name}: '${prop.alias}'`;
         return buf;
     }
 
     static CompileInputRules(schema: $.Node) {
         let buf = `\t\trules: {\n`;
-        let props = schema.props.map(prop => this.CompileInputRuleProp(prop)).filter(p => p)
+        let props = Object.values(schema.props).map(prop => this.CompileInputRuleProp(prop as any)).filter(p => p)
         buf += props.join(',\n')+'\n';
         buf += '\t\t},\n';        
         return buf;
@@ -66,7 +70,7 @@ export default class NodeCompiler {
 
     static CompileInputNames(schema: $.Node) {
         let buf = `\t\tnames: {\n`;
-        let props = schema.props.map(prop => this.CompileInputNameProp(prop)).filter(p => p)
+        let props = Object.values(schema.props).map(prop => this.CompileInputNameProp(prop as any)).filter(p => p)
         buf += props.join(',\n')+'\n';
         buf += '\t\t},\n';        
         return buf;
@@ -82,7 +86,7 @@ export default class NodeCompiler {
 
     /* Builder */
 
-    static CompileBuilderProp(prop: $.Prop) {
+    static CompileBuilderProp(prop: $.Prop.I) {
         if (prop.opts.scope === 'private') return null;
         let buf = `\t\t${prop.name}: Prop.Field('${prop.name}')`;
         return buf;
@@ -90,7 +94,7 @@ export default class NodeCompiler {
 
     static CompileBuilder(schema: $.Node) {
         let buf = `\tstatic builder = {\n`;
-        let props = schema.props.map(prop => this.CompileBuilderProp(prop)).filter(p => p)
+        let props = Object.values(schema.props).map(prop => this.CompileBuilderProp(prop as any)).filter(p => p)
         buf += props.join(',\n')+'\n';
         buf += '\t}\n\n';        
         return buf;
@@ -106,49 +110,64 @@ export default class NodeCompiler {
 
     /* Create */
 
-    static CompileDoCreateModelProp(prop: $.Prop) {
+    static CompileCreateRule(rule: $.Rule.I) {
+        let buf = `\t\t${rule.code}\n`;
+        return buf;
+    }
+
+    static CompileCreateRules(schema: $.Node) {
+        let buf = '';
+        schema.rules.forEach(rule => {
+            buf += this.CompileCreateRule(rule as any);
+        })
+        buf += '\n';
+        return buf;
+    }
+
+    static CompileCreateModelProp(prop: $.Prop.I) {
         if (prop.opts.scope !== 'public') return '';
         return `\t\tmodel.${prop.name} = input.${prop.name};\n`
     }
 
-    static CompileDoCreateModel(schema: $.Node) {
+    static CompileCreateModel(schema: $.Node) {
         let model_name = Camelize(schema.name)+'Model';
         let buf = `\t\tlet model = new ${model_name}();\n`;
-        schema.props.forEach(prop => {
-            buf += this.CompileDoCreateModelProp(prop);
+        Object.values(schema.props).forEach(prop => {
+            buf += this.CompileCreateModelProp(prop as any);
         })
         buf += `\t\treturn model;\n`;
         return buf;
     }
 
-    static CompileDoCreate(schema: $.Node) {
+    static CompileCreate(schema: $.Node) {
         let model_name = Camelize(schema.name)+'Model';
-        let buf = `\tasync doCreate(input: Input): Promise<${model_name}> {\n`;
-        buf += this.CompileDoCreateModel(schema);
+        let buf = `\tasync doCreate(input: Input): Promise<${model_name}> {\n\n`;
+        buf += this.CompileCreateRules(schema);
+        buf += this.CompileCreateModel(schema);
         buf += `\t}\n\n`;
         return buf;
     }
 
     /* Update */
 
-    static CompileDoUpdateModelProp(prop: $.Prop) {
+    static CompileUpdateModelProp(prop: $.Prop.I) {
         if (prop.opts.scope !== 'public') return '';
         return `\t\tif (!isEmpty(input.${prop.name})) model.${prop.name} = input.${prop.name};\n`
     }
 
-    static CompileDoUpdateModel(schema: $.Node) {
+    static CompileUpdateModel(schema: $.Node) {
         let buf = '';
-        schema.props.forEach(prop => {
-            buf += this.CompileDoUpdateModelProp(prop);
+        Object.values(schema.props).forEach(prop => {
+            buf += this.CompileUpdateModelProp(prop as any);
         })
         buf += `\t\treturn model;\n`;
         return buf;
     }
 
-    static CompileDoUpdate(schema: $.Node) {
+    static CompileUpdate(schema: $.Node) {
         let model_name = Camelize(schema.name)+'Model';
         let buf = `\tasync doUpdate(model: ${model_name}, input: Input): Promise<${model_name}> {\n`;
-        buf += this.CompileDoUpdateModel(schema);
+        buf += this.CompileUpdateModel(schema);
         buf += `\t}\n\n`;
         return buf;
     }
@@ -158,6 +177,30 @@ export default class NodeCompiler {
     static CompileInputType(schema: $.Node) {
         let node_name = Camelize(schema.name)+'Node'
         return `type Input = { [key in keyof typeof ${node_name}.input.rules]?: any }\n\n`
+    }
+
+    /* Exceptions */
+
+    static CompileException(exception: $.Rule.Exception) {
+        let args = exception.args.map(arg => `${arg.name}:${arg.type}`).join(', ');
+        let buf = `\tstatic ${exception.name}(${args}) {\n`
+        buf += `\t\treturn new this(\`${exception.msg}\`, Status.${Status[exception.status]}, this.code);\n`
+        buf += '\t}\n\n'
+        return buf;
+    }
+
+    static CompileExceptions(schema: $.Node) {
+        let exceptions = schema.rules
+            .map(rule => (rule as any as $.Rule.I).exception)
+            .filter(r => r)
+        if (!exceptions.length) return '';
+        let buf = `class Exception extends BaseException {\n`;
+        buf += `\tstatic code = 'E_${schema.name.toUpperCase()}'\n\n`;
+        exceptions.forEach(exception => {
+            buf += this.CompileException(exception!)
+        })
+        buf += '}'
+        return buf;
     }
 
     /* Main */
@@ -176,11 +219,12 @@ export default class NodeCompiler {
         buf += this.CompileInput(schema);
         buf += this.CompileBuilder(schema);
         buf += this.CompileExpand(schema);
-        buf += this.CompileDoCreate(schema);
-        buf += this.CompileDoUpdate(schema);
+        buf += this.CompileCreate(schema);
+        buf += this.CompileUpdate(schema);
         buf += '}\n\n'
 
         buf += this.CompileInputType(schema);
+        buf += this.CompileExceptions(schema);
 
         return buf;
     }

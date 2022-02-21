@@ -18,6 +18,12 @@ const PT_BR: i18nStrings = {
             array: 'deve ser uma lista',
             minLength: 'não possui o tamanho mínimo: '
         }
+    },
+
+    Schema: {
+        RuleExceptions: {
+            greaterThan: 'deve ser maior do que'
+        }
     }
 
 }
