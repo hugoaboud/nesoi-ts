@@ -1,6 +1,8 @@
+import path from "path";
 import Console from "./common/console"
 import { DotEnv, DotEnvValidator } from "./common/dotenv"
 import Shell from "./common/shell"
+import PostgreSQL from "./common/database";
 
 /**
  * [ prepare ]
@@ -25,17 +27,10 @@ async function main() {
     await Shell.cmd('.', 'node ace configure @adonisjs/lucid')
 
     if (DotEnv.get('DB_CONNECTION') === 'pg')
-        postgres(db_name)
-}
+        await PostgreSQL.setup(db_name)
 
-async function postgres(db_name: string) {
-    Console.step('Setting up PostgreSQL environment')
-    DotEnv.set('PG_DB_NAME', db_name)
-    DotEnvValidator.set('PG_HOST', 'string')
-	DotEnvValidator.set('PG_PORT', 'number')
-	DotEnvValidator.set('PG_USER', 'string')
-	DotEnvValidator.set('PG_PASSWORD', 'string')
-	DotEnvValidator.set('PG_DB_NAME', 'string')
+    Console.step('Creating Nodes folder')
+    Shell.mkdir(path.join('app','Nodes'));
 }
 
 main();
