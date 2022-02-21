@@ -80,7 +80,7 @@ export default abstract class Controller {
     private static isEnabled(method: TCRUDMethod): boolean {
 
         if (method !== 'read' && method !== 'index') {
-            return (this.node as any as typeof Node).schema != undefined;
+            return (this.node as any as typeof Node).input != undefined;
         }
         return (this as any)[method+'_route'];
         

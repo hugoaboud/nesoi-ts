@@ -25,7 +25,7 @@ export default abstract class Node<Model extends NodeModel, Entity extends NodeE
     static alias: string
     static model: LucidModel
     
-    static schema?: ValidationSchema
+    static input?: ValidationSchema
     static builder: NodeBuilder
     static expand: ExpandSchema = {}
 
@@ -145,10 +145,10 @@ export default abstract class Node<Model extends NodeModel, Entity extends NodeE
         return (this.constructor as typeof Node).builder;
     }
     private getSchema(): ValidationSchema {
-        return (this.constructor as typeof Node).schema!;
+        return (this.constructor as typeof Node).input!;
     }
     private isStatic(): boolean {
-        return (this.constructor as typeof Node).schema == undefined;
+        return (this.constructor as typeof Node).input == undefined;
     }
 
     private async queryByID(id: number): Promise<Model|null> {
