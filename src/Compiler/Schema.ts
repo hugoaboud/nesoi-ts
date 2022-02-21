@@ -14,8 +14,10 @@ export namespace $ {
         opts: {
             scope: PropScope
             nullable: boolean
+            default?: any
         }
 
+        default: (val: any) => Prop
         nullable: () => Prop
         protected: () => Prop
         private: () => Prop
@@ -24,10 +26,15 @@ export namespace $ {
 
         const Opts = () => ({
             scope: 'public' as PropScope,
+            default: undefined,
             nullable: false
         })
 
         const Methods = {
+            default: function (this: Prop, val: any) {
+                this.opts.default = val;
+                return this
+            },
             nullable: function (this: Prop) {
                 this.opts.nullable = true;
                 return this;
