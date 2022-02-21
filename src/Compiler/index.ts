@@ -3,6 +3,8 @@ import { $ } from './Schema';
 import path from 'path';
 import MigrationCompiler from './MigrationCompiler';
 import ModelCompiler from './ModelCompiler';
+import Console from '../Common/Console';
+import NodeCompiler from './NodeCompiler';
 
 
 export default class Compiler {
@@ -42,12 +44,21 @@ export default class Compiler {
     
     static async Compile() {
         
-        let schemas = await this.LoadNodeSchemas();
-        
+        Console.info('Compiler', '@start')
         this.CreateBuildDir();
-        
-        MigrationCompiler.Compile(schemas, this.path.build.migrations);
-        ModelCompiler.Compile(schemas, this.path.build.models);
+
+        let schemas = await this.LoadNodeSchemas();
+
+        schemas.map(schema => {
+
+            Console.info('Compiler', `Compiling ${Console.colored(schema.alias,'lightcyan')} ${Console.colored('('+schema.name+')','cyan')}`)
+
+            MigrationCompiler.Compile(schema, this.path.build.migrations);
+            ModelCompiler.Compile(schema, this.path.build.models);
+            NodeCompiler.Compile(schema, this.path.build.models);
+
+        })
+
 
     }
 

@@ -6,14 +6,15 @@ import { $ } from './Schema';
 
 const Types = {
     string: 'string',
-    int: 'number'
+    int: 'number',
+    float: 'number'
 };
 
 export default class ModelCompiler {
     
-    static CompileProp(prop: $.Prop) {
+    static CompileProp(prop: $.Prop) {        
         let type = Types[prop.type];
-        let nullable = prop.nullable?'?':'';
+        let nullable = prop.opts.nullable?'?':'';
         let source = '';
         source += `\t@column()\n`;
         source += `\tpublic ${prop.name}${nullable}: ${type}\n\n`;
@@ -22,46 +23,35 @@ export default class ModelCompiler {
     }
 
     static CompileSchema(schema: $.Node) {
-        Console.info('ModelCompiler', `Compiling ${Console.colored(schema.alias,'lightcyan')} ${Console.colored('('+schema.name+')','cyan')}`)
+        Console.info('ModelCompiler', `Compiling ${Console.colored(schema.name,'cyan')}`)
 
-        let file = `import { DateTime } from 'luxon'\n`;
-        file += `import { BaseModel, column } from '@ioc:Adonis/Lucid/Orm'\n\n`
+        let buf = `import { DateTime } from 'luxon'\n`;
+        buf += `import { column } from '@ioc:Adonis/Lucid/Orm'\n`
+        buf += `import BaseModel from 'adonis-graph-db/lib/Model'\n\n`
 
         let class_name = Camelize(schema.name)+'Model';
-        file += `export default class ${class_name} extends BaseModel {\n`;
-        file += `\tpublic static table = '${Plural(schema.name)}'\n\n`;
-
-        file += `\t@column({ isPrimary: true })\n`;
-        file += `\tpublic id: number\n\n`;
+        buf += `export default class ${class_name} extends BaseModel {\n`;
+        buf += `\tpublic static table = '${Plural(schema.name)}'\n\n`;
 
         schema.props.forEach(prop => {
-            file += this.CompileProp(prop);
+            buf += this.CompileProp(prop);
         })
 
-        file += `\t@column.dateTime({ autoCreate: true })\n`;
-        file += `\tpublic createdAt: DateTime\n\n`;
-        
-        file += `\t@column.dateTime({ autoCreate: true, autoUpdate: true })\n`;
-        file += `\tpublic updatedAt: DateTime\n`;
-        
-        file += `}`;
+        buf += `}`;
     
-        return file;
+        return buf;
     }
 
-    static Compile(schemas: $.Node[], out_path: string) {
-        Console.info('ModelCompiler', '@start')
-        let models = schemas.map(schema => ({
-            name: Camelize(schema.name),
-            file: this.CompileSchema(schema)
-        }));
-        
-        Console.info('ModelCompiler', `Saving model files to ${Console.colored(out_path,'green')}`)
-        models.forEach(migration => {
-            let name = migration.name + 'Model.ts';
-            let file_path = path.join(out_path,name);
-            fs.writeFileSync(file_path, migration.file);
-        })
+    static Save(buf: string, out_path: string, name: string) {
+        name = Camelize(name) + 'Model.ts'
+        let file_path = path.join(out_path,name);
+        Console.info('MigrationCompiler', `Saving ${Console.colored(file_path,'green')}`)
+        fs.writeFileSync(file_path, buf);   
+    }
+
+    static Compile(schema: $.Node, out_path: string) {
+        let buf = this.CompileSchema(schema);
+        this.Save(buf, out_path, schema.name);
     }
 
 }

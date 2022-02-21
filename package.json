@@ -1,6 +1,6 @@
 {
   "name": "adonis-graph-db",
-  "version": "0.0.3",
+  "version": "0.0.6",
   "description": "Graph-Oriented SQL Database for AdonisJS",
   "repository": "https://github.com/hugoaboud/adonis-graph-db.git",
   "author": "Hugo Aboud <hugoaboud@gmail.com>",

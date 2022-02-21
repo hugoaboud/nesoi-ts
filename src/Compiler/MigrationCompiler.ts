@@ -6,64 +6,62 @@ import { $ } from './Schema';
 
 const Types = {
     string: 'string',
-    int: 'integer'
+    int: 'integer',
+    float: 'float'
 };
 
 export default class MigrationCompiler {
 
     static CompileProp(prop: $.Prop) {
         let type = Types[prop.type];
-        let nullable = prop.nullable?'':'.notNullable()';
+        let nullable = prop.opts.nullable?'':'.notNullable()';
         return `\t\t\ttable.${type}('${prop.name}')${nullable}\n`;
     }
 
     static CompileSchema(schema: $.Node) {
-        Console.info('MigrationCompiler', `Compiling ${Console.colored(schema.alias,'lightcyan')} ${Console.colored('('+schema.name+')','cyan')}`)
+        Console.info('MigrationCompiler', `Compiling ${Console.colored(schema.name,'cyan')}`)
 
-        let file = `import BaseSchema from '@ioc:Adonis/Lucid/Schema'\n\n`;
+        let buf = `import BaseSchema from '@ioc:Adonis/Lucid/Schema'\n\n`;
 
         let class_name = Plural(Camelize(schema.name));
-        file += `export default class ${class_name} extends BaseSchema {\n`;
-        file += `\tprotected tableName = '${Plural(schema.name)}'\n\n`;
+        buf += `export default class ${class_name} extends BaseSchema {\n`;
+        buf += `\tprotected tableName = '${Plural(schema.name)}'\n\n`;
 
-        file += `\tpublic async up () {\n`;
-        file += `\t\tthis.schema.createTable(this.tableName, (table) => {\n`;
-        file += `\t\t\ttable.increments('id')\n\n`;
+        buf += `\tpublic async up () {\n`;
+        buf += `\t\tthis.schema.createTable(this.tableName, (table) => {\n`;
+        buf += `\t\t\ttable.increments('id')\n\n`;
 
         schema.props.forEach(prop => {
-            file += this.CompileProp(prop);
+            buf += this.CompileProp(prop);
         })
 
-        file += `\n\t\t\ttable.integer('created_by')\n`;
-        file += `\t\t\ttable.integer('deleted_by')\n`;
+        buf += `\n\t\t\ttable.integer('created_by')\n`;
+        buf += `\t\t\ttable.integer('deleted_by')\n`;
 
-        file += `\n\t\t\ttable.timestamp('deleted_at', { useTz: true })\n`;
-        file += `\t\t\ttable.timestamp('created_at', { useTz: true })\n`;
-        file += `\t\t\ttable.timestamp('updated_at', { useTz: true })\n`;
-        file += `\t\t})\n`;
-        file += `\t}\n\n`;
+        buf += `\n\t\t\ttable.timestamp('deleted_at', { useTz: true })\n`;
+        buf += `\t\t\ttable.timestamp('created_at', { useTz: true })\n`;
+        buf += `\t\t\ttable.timestamp('updated_at', { useTz: true })\n`;
+        buf += `\t\t})\n`;
+        buf += `\t}\n\n`;
 
-        file += `\tpublic async down () {\n`;
-        file += `\t\tthis.schema.dropTable(this.tableName)\n`;
-        file += `\t}\n`;
-        file += `}`;
+        buf += `\tpublic async down () {\n`;
+        buf += `\t\tthis.schema.dropTable(this.tableName)\n`;
+        buf += `\t}\n`;
+        buf += `}`;
 
-        return file;
+        return buf;
     }
 
-    static Compile(schemas: $.Node[], out_path: string) {
-        Console.info('MigrationCompiler', '@start')
-        let migrations = schemas.map(schema => ({
-            name: Plural(schema.name),
-            file: this.CompileSchema(schema)
-        }));
-        
-        Console.info('MigrationCompiler', `Saving migration files to ${Console.colored(out_path,'green')}`)
-        migrations.forEach(migration => {
-            let name = migration.name + '.ts';
-            let file_path = path.join(out_path,name);
-            fs.writeFileSync(file_path, migration.file);
-        })
+    static Save(buf: string, out_path: string, name: string) {
+        name = Plural(name) + '.ts'
+        let file_path = path.join(out_path,name);
+        Console.info('MigrationCompiler', `Saving ${Console.colored(file_path,'green')}`)
+        fs.writeFileSync(file_path, buf);   
+    }
+
+    static Compile(schema: $.Node, out_path: string) {
+        let buf = this.CompileSchema(schema);
+        this.Save(buf, out_path, schema.name);
     }
 
 }
