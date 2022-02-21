@@ -1,6 +1,7 @@
 import Console from "./common/console"
 
 import Compiler from "../src/Compiler"
+import Database from "./common/database";
 
 /**
  * [ compile ]
@@ -12,7 +13,13 @@ Console.header('Compile')
 
 async function main() {
     
+    let rollback_migrations = await Console.yesOrNo('Rollback migrations?','y');
+    if (rollback_migrations) await Database.rollbackMigrations();
+
     await Compiler.Compile();
+
+    let run_migrations = await Console.yesOrNo('Run migrations?','y');
+    if (run_migrations) await Database.runMigrations();
 
 }
 

@@ -2,7 +2,18 @@ import Console from "./console"
 import { DotEnv, DotEnvValidator } from "./dotenv"
 import Shell from "./shell"
 
-export default class PostgreSQL {
+export default class Database {
+    static async runMigrations() {
+        Console.step('Running migrations')
+        await Shell.cmd('.','node ace migration:run')
+    }
+    static async rollbackMigrations() {
+        Console.step('Rolling back migrations')
+        await Shell.cmd('.','node ace migration:rollback')
+    }
+}
+
+export class PostgreSQL {
 
     static async setup(db_name: string) {
         Console.step('Setting up PostgreSQL environment')
@@ -21,11 +32,11 @@ export default class PostgreSQL {
         Console.step('Installing pgtools')
         await Shell.cmd('node_modules/adonis-graph-db','yarn add --dev pgtools');
 
-        Console.step('Creating database')
         await this.createDatabase()
     }
 
     static async createDatabase() {
+        Console.step('Creating PostgreSQL database')
         let envfile = DotEnv.load()
         const pgtools = require('pgtools')
         return new Promise((resolve, reject) => {

@@ -2,7 +2,7 @@ import path from "path";
 import Console from "./common/console"
 import { DotEnv, DotEnvValidator } from "./common/dotenv"
 import Shell from "./common/shell"
-import PostgreSQL from "./common/database";
+import { PostgreSQL } from "./common/database";
 
 /**
  * [ prepare ]

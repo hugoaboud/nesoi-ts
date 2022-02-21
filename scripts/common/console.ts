@@ -42,6 +42,14 @@ export default class Console {
         })
     }
 
+    // Ask a yes or no question and wait for the answer
+    static async yesOrNo(text: string, defaul:'y'|'n' = 'n'): Promise<boolean> {
+        let answer = await this.question(text + ' [y|n]', defaul);
+        answer = answer.toLowerCase();
+        if (answer === 'y' || answer === 'yes') return true;
+        return false;
+    }
+
     // Prints a step message to the terminal
     static step(msg: string) {
         console.log(this.colored('- ' + msg, 'green'))
