@@ -22,7 +22,10 @@ const PT_BR: i18nStrings = {
 
     Schema: {
         RuleExceptions: {
-            greaterThan: 'deve ser maior do que'
+            greaterThan: 'deve ser maior do que',
+            greaterThanOrEqualTo: 'deve ser maior ou igual a',
+            lessThan: 'deve ser menor do que',
+            lessThanOrEqualTo: 'deve ser maior ou igual a'
         }
     }
 
