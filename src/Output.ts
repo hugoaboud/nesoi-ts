@@ -12,38 +12,39 @@ type PropSource = 'model'|'entity'
 //@ts-ignore: The T parameter is used to infer the property type.
 export class PropSchema<Model, T> {    
     constructor(
-        protected source: PropSource,
-        protected prop: keyof Model,
-        protected fn: (model: Model) => any,
-        protected list?: boolean
+        public source: PropSource,
+        public prop: keyof Model,
+        public fn: (obj: Model) => any,
+        public list?: boolean,
+        public async = false
     ) {}
 }
 
 export function Prop<Model>() {
     return (prop: keyof Model, source: PropSource = 'model') => ({
-        boolean: new PropSchema<Model, boolean>(source, prop, (model: Model) => {
-            return model[prop]
+        boolean: new PropSchema<Model, boolean>(source, prop, (obj: Model) => {
+            return obj[prop]
         }),
-        int: new PropSchema<Model, number>(source, prop, (model: Model) => {
-            return parseInt(model[prop] as any)
+        int: new PropSchema<Model, number>(source, prop, (obj: Model) => {
+            return parseInt(obj[prop] as any)
         }),
-        decimal: new PropSchema<Model, number>(source, prop, (model: Model) => {
-            return model[prop]
+        decimal: new PropSchema<Model, number>(source, prop, (obj: Model) => {
+            return obj[prop]
         }),
-        string: new PropSchema<Model, string>(source, prop, (model: Model) => {
-            return model[prop]
+        string: new PropSchema<Model, string>(source, prop, (obj: Model) => {
+            return obj[prop]
         }),
-        money: new PropSchema<Model, string>(source, prop, (model: Model) => {
-            return model[prop]
+        money: new PropSchema<Model, string>(source, prop, (obj: Model) => {
+            return '' + obj[prop]
         }),
         serviceObj: <T extends typeof Service>(_service: T, _resource: keyof T['resources']): PropSchema<Model, Record<string,any>> =>
-            new PropSchema<Model, Record<string,any>>(source, prop, (model: Model) => {
-                return model[prop]
-            }),
+            new PropSchema<Model, Record<string,any>>(source, prop, (obj: Model) => {
+                return obj[prop]
+            }, false, true),
         serviceList: <T extends typeof Service>(_service: T, _resource: keyof T['resources']): PropSchema<Model, Record<string,any>[]> =>
-            new PropSchema<Model, Record<string,any>[]>(source, prop, (model: Model) => {
-                return model[prop]
-            }, true),
+            new PropSchema<Model, Record<string,any>[]>(source, prop, (obj: Model) => {
+                return obj[prop]
+            }, true, true),
     })
 }
 
