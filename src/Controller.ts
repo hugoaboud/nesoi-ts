@@ -111,11 +111,20 @@ export const IdMatcher = { match: /^\d+(.json)?$/, cast: (id: string) => Number(
  * Resource Controller
  */
 
-export function ResourceController<T>(resource: Resource<T,any>, route: string) {
+export function ResourceController<T>(
+    resource: Resource<T,any>,
+    route: string,
+    auth?: typeof EndpointAuth,
+    version = 'v1'
+) {
 
     return class extends BaseController {
         
         static route = route
+
+        async readAll() {
+            return resource.readAll();
+        }
 
         async readOne(ctx: HttpContextContract) {
             return resource.readOne(ctx.params.id);
@@ -125,5 +134,26 @@ export function ResourceController<T>(resource: Resource<T,any>, route: string) 
             return resource.create(ctx.request.body());
         }
         
+        static routes() {
+            let path = '/' + this.route;
+
+            this.$endpoints['readAll'] = {
+                verb: 'get', path: path,
+                auth, version, middlewares: []
+            }
+
+            this.$endpoints['readOne'] = {
+                verb: 'get', path: path+'/:id',
+                auth, version, middlewares: []
+            }
+
+            this.$endpoints['create'] = {
+                verb: 'post', path,
+                auth, version, middlewares: []
+            }
+
+            super.routes();
+        }
+
     }
 }

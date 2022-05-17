@@ -82,6 +82,11 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
         return this.build(obj);
     }
 
+    async readAll(): Promise<T[]> {
+        const objs = await this.$.Model.query() as Model<S>[];
+        return this.buildAll(objs);
+    }
+
     async readOne(id: number): Promise<T> {
         const obj = await this.$.Model.find(id) as Model<S>;
         if (!obj) throw Exception.NotFound(id);
@@ -90,6 +95,12 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
 
     private async build(obj: Model<S>): Promise<T> {
         return obj as any;
+    }
+    
+    private async buildAll(objs: Model<S>[]): Promise<T[]> {
+        return Promise.all(objs.map(
+            async obj => this.build(obj)
+        ));
     }
 
 }
