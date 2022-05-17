@@ -1,4 +1,4 @@
-import { Schema, Prop, InputProp, Transition, Type, Resource } from '../../src';
+import { Schema, Prop, InputProp, Transition, Type, Resource } from '../../src/index';
 import ShinyThingModel from './ShinyThingModel';
 
 const _ = Prop<ShinyThingModel>()
@@ -7,6 +7,8 @@ const S = Schema({
 
     Model: ShinyThingModel,
 
+    // 1. Prop argument is typed based on the model
+    // 2. Prop without type cannot be assigned
     Output: {
         name:           _('name').string,
         price:          _('price').money,
@@ -16,6 +18,8 @@ const S = Schema({
         }
     },
 
+    // 3. State 'created' must exist
+    // 4. States must declare an alias
     States: {
         created:  { alias: 'Criado' },
         broken:   { alias: 'Quebrada' },
@@ -24,21 +28,29 @@ const S = Schema({
 
     Transitions: {
 
+        // 5. Transition 'create' must exist
+        // 6. Transition 'create' must be from 'void'
+        // 7. Transition 'create' must be to 'created'
         create: Transition({
             alias: 'Criar',
             from: 'void',
             to: 'created',
+            // 8. InputProp without type cannot be assigned
+            // 9. InputProp should have generic type according to schema type
+            // 10. Optional should show up as | undefined in generic
             input: {
                 name:           $('Nome').string.noDuplicate('code'),
                 price:          $('Preço').float.optional(0),
                 decoration:     $('Decoração').object({
                     color:      $('Cor').enum(['red','blue','green'] as const),
                     shininess:  $('Brilhância').float
+                // 11. Default value for optional object should be typed according to schema
                 }).optional({
                     color: 'red',
                     shininess: 0.3
                 })
             },
+            // 12. Input argument should be typed according to schema
             fn: async (obj: ShinyThingModel, input) => {
                 obj.name = input.name;
                 obj.price = input.price!;                
@@ -51,6 +63,7 @@ const S = Schema({
             },
         }),
 
+        // 13. Additional transitions should not be required
         break: Transition({
             alias: 'Quebrar',
             from: 'created',

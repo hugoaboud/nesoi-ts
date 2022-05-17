@@ -1,6 +1,12 @@
+export enum Status {
+    OK = 200,
+    UNAUTHORIZED = 401,
+    BADREQUEST = 422,
+    INTERNAL_SERVER = 500
+}
+
 /** REST verbs allowed for service requests. */
 export type Verb = 'get'|'post'|'put'|'delete';
-
 
 export default abstract class Service {
 
