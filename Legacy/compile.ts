@@ -1,7 +1,7 @@
-import Console from "./common/console"
+import Console from "../scripts/common/console"
 
 import Compiler from "../src/Compiler"
-import Database from "./common/database";
+import Database from "../scripts/common/database";
 
 /**
  * [ compile ]

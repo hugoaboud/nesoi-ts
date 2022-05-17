@@ -11,3 +11,4 @@ async function main() {
     await ruby.break({});
 
 }    
+main();

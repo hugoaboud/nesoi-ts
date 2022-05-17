@@ -5,7 +5,7 @@
    Such values are built from the database object.
 */
 
-import Service from "../Service"
+import Service from "./Service"
 
 type PropSource = 'model'|'entity'
 

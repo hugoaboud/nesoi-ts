@@ -1,8 +1,8 @@
 import BaseModel from "./Model"
 import { OutputSchema, PropType } from "./Output"
 import { TransitionSchema, TransitionInput, StateSchema, Transition as $Transition, StateMachine } from "./StateMachine"
-import { Prop as $Prop } from '../../src/Resource/Output';
-import { InputProp as $InputProp } from '../../src/Resource/Input';
+import { Prop as $Prop } from './Output';
+import { InputProp as $InputProp } from './Input';
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 
 /**

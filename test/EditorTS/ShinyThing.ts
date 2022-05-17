@@ -1,4 +1,4 @@
-import { Schema, Prop, InputProp, Transition, Type, Resource } from '../../src/Resource';
+import { Schema, Prop, InputProp, Transition, Type, Resource } from '../../src';
 import ShinyThingModel from './ShinyThingModel';
 
 const _ = Prop<ShinyThingModel>()
