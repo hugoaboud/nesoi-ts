@@ -20,7 +20,10 @@ export interface i18nStrings {
 
     Schema: {
         RuleExceptions: {
-            greaterThan: string
+            greaterThan: string,
+            greaterThanOrEqualTo: string,
+            lessThan: string,
+            lessThanOrEqualTo: string,
         }
     }
 

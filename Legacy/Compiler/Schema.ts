@@ -1,9 +1,5 @@
 import { Status } from "../Common/Status";
-import { Camelize } from "../Common/String";
-import i18n from "../i18n";
-
-const Strings = i18n.Schema;
-
+import { Rules } from "./Rules";
 export namespace $ {
 
     /* Props */
@@ -140,18 +136,19 @@ export namespace $ {
             }
             
             greaterThan(this: Rule.T, val: number): Rule.T {
-                this.fn = (prop: Prop.I) => {
-                    let exception_name = Camelize(prop.name)+'NotGreaterThan'+(val.toString().replace('.','_'));
-                    return {
-                        code: `if (input.${prop.name} <= ${val}) throw Exception.${exception_name}(input.${prop.name})`,
-                        exception: {
-                            name: exception_name,
-                            args: [{name: 'val', type: 'number'}],
-                            status: Status.BADREQUEST,
-                            msg: `${prop.alias} (\${val}) ${Strings.RuleExceptions.greaterThan} ${val}`
-                        }
-                    }
-                }
+                this.fn = Rules.GreaterThan(val)
+                return this;
+            }
+            greaterThanOrEqualTo(this: Rule.T, val: number): Rule.T {
+                this.fn = Rules.GreaterThanOrEqualTo(val)
+                return this;
+            }
+            lessThan(this: Rule.T, val: number): Rule.T {
+                this.fn = Rules.LessThan(val)
+                return this;
+            }
+            lessThanOrEqualTo(this: Rule.T, val: number): Rule.T {
+                this.fn = Rules.LessThanOrEqualTo(val)
                 return this;
             }
         }
