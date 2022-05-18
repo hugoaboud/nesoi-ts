@@ -11,14 +11,14 @@ export function isEmpty(val: any): boolean {
 
 export class ResourceSchemaValidator {
 
-    static validate($: Schema) {
+    static validate(resource: Resource<any,any>, $: Schema) {
 
         if (this.hasMonetaryProp($.Output))
             this.checkCoinColumn($.Model);
 
         const links = this.getGraphLinks($.Output);
         links.forEach(link => {
-            this.checkGraphLinkFKey($.Model, link);
+            this.checkGraphLinkFKey(resource, $.Model, link);
         })
 
     }
@@ -59,14 +59,19 @@ export class ResourceSchemaValidator {
                 throw Exception.NoCoinOnMonetaryTable();
     }
 
-    private static checkGraphLinkFKey<R extends Resource<any,any>>(model: typeof BaseModel, link: GraphLinkSchema<R>) {
+    private static checkGraphLinkFKey<S extends Schema, R extends Resource<any,S>>(
+        resource: R, model: typeof BaseModel,
+        link: GraphLinkSchema<R>
+    ) {
         if (link.many) {
-            
+            const fkey = resource.name(true) + '_id';
+            if (!link.resource.$.Model.$hasColumn(fkey))
+                throw Exception.NoFKeyForChildrenLink(fkey);
         }
         else {
             const fkey = link.resource.name(true) + '_id';
             if (!model.$hasColumn(fkey))
-                throw Exception.NoFKeyForLink(fkey);
+                throw Exception.NoFKeyForChildLink(fkey);
         }
     }
 
@@ -80,8 +85,12 @@ class Exception extends BaseException {
         return new this('Um recurso com propriedade(s) monetária(s) deve possuir uma coluna `coin` no modelo', Status.INTERNAL_SERVER, this.code);
     }
 
-    static NoFKeyForLink(fkey: string) {
+    static NoFKeyForChildLink(fkey: string) {
         return new this(`Um recurso com um link child deve possuir uma coluna '${fkey}' no modelo`, Status.INTERNAL_SERVER, this.code);
+    }
+
+    static NoFKeyForChildrenLink(fkey: string) {
+        return new this(`O recurso filho de um link children deve possuir uma coluna '${fkey}' no modelo`, Status.INTERNAL_SERVER, this.code);
     }
 
 }

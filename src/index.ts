@@ -92,7 +92,7 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
 
     constructor($: S) {
         super($);
-        ResourceSchemaValidator.validate($);
+        ResourceSchemaValidator.validate(this, $);
         this.$.Output = {
             id: Prop<any>()('id').int,
             ...this.$.Output,
