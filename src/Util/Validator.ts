@@ -1,6 +1,7 @@
 import { Schema } from "..";
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { Status } from "./Service";
+import { GraphPropSchema } from "../Graph";
 
 export function isEmpty(val: any): boolean {
     return (val == null || val.length == 0)
@@ -20,6 +21,7 @@ export class ResourceSchemaValidator {
     private static hasMonetaryProp(output: Schema['Output']) {
         for (let key in output) {
             const prop = output[key];
+            if (prop instanceof GraphPropSchema) continue;
             if (!prop.fn) {
                 if (this.hasMonetaryProp(prop as Schema['Output']))
                     return true;

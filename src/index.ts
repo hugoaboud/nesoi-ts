@@ -3,6 +3,7 @@ import { OutputSchema, PropSchema, PropType } from "./Output"
 import { TransitionSchema, TransitionInput, StateSchema, Transition as $Transition, StateMachine } from "./StateMachine"
 import { Prop as $Prop } from './Output';
 import { InputProp as $InputProp } from './Input';
+import { GraphProp as $GraphProp } from './Graph';
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { DateTime } from 'luxon'
 import { Client } from "./Util/Auth";
@@ -42,12 +43,10 @@ export type Schema = {
 export type Type<S extends Schema> = 
     { 
         id: number
-        created_by: number
-        updated_by: number
-        deleted_by?: number
+        // created_by: number
+        // updated_by: number
         created_at: DateTime
         updated_at: DateTime
-        deleted_at?: DateTime
     } & 
     { [k in keyof S['Output']]: PropType<S['Output'][k]> } & 
     Omit<{ [k in keyof S['Transitions']]: (input: TransitionInput<S['Transitions'][k]>) => string }, 'create'>
@@ -58,6 +57,13 @@ export type Type<S extends Schema> =
 */
 
 export const Prop = $Prop
+
+/**
+    [Resource GraphProp]
+    
+*/
+
+export const GraphProp = $GraphProp
 
 /**
     [Resource InputProp]
@@ -89,23 +95,40 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
         this.$.Output = {
             id: Prop<any>()('id').int,
             ...this.$.Output,
-            created_by: Prop<any>()('created_by').int,
-            updated_by: Prop<any>()('updated_by').int,
-            deleted_by: Prop<any>()('deleted_by').int,
+            // created_by: Prop<any>()('created_by').int,
+            // updated_by: Prop<any>()('updated_by').int,
             created_at: Prop<any>()('created_at').string,
-            updated_at: Prop<any>()('updated_at').string,
-            deleted_at: Prop<any>()('deleted_at').string
+            updated_at: Prop<any>()('updated_at').string
         };
     }
 
     /* CRUD */
 
-    async create(client: Client, input: Input<S,'create'>): Promise<T> {
+    async create(
+        client: Client,
+        input: Input<S,'create'>,
+        extra?: Record<string,any>
+    ): Promise<T> {
         const obj = new this.$.Model() as Model<S>;
         obj.state = 'void';
+        if (extra) Object.assign(input, extra);
         await this.run(client, 'create', obj, input);
-        await obj.refresh();
         return this.build(client, obj);
+    }
+
+    async createMany(
+        client: Client,
+        inputs: Input<S,'create'>[],
+        extra?: (input: Input<S,'create'>) => Record<string,any>
+    ): Promise<T[]> {
+        const objs = [] as T[];
+        for (let i in inputs) {
+            const input = inputs[i];
+            if (extra) Object.assign(input, extra(input));
+            const obj = await this.create(client, input);
+            objs.push(obj);
+        }
+        return objs;
     }
 
     async readAll(client: Client): Promise<T[]> {

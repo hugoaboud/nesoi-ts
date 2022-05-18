@@ -1,0 +1,28 @@
+- Resource:
+    
+    - Sanitization:
+        - scope:
+            - Should be 'public' for user input
+            - Should be 'protected' for internal calls
+            - Should be 'private' for internal calls from the same resource
+        - filterInternalKeys
+            - Should not allow '__keys__' to be read from client request
+        - filterInputScope:
+            - Should remove protected and private props from public input
+            - Should remove private props from protected input
+            - Should not remove any props from private input
+    - Validation:
+        - flagValidated:
+            - Should flag an object with depth 0 as __validated__
+            - Should flag an object with depth 1 as __validated__
+            - Should flag an object with depth 2 as __validated__
+            - Should avoid revalidating public props with depth 0
+            - Should avoid revalidating public props with depth 1
+            - Should avoid revalidating public props with depth 2
+    
+    - Validation:
+        - scope:
+            - Should not require private and protected required props on public input
+            - Should not require private required props on protected input
+            - Should not require private and protected requiredWhen props on public input
+            - Should not require private requiredWhen props on protected input

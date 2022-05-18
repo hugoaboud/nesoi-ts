@@ -9,7 +9,8 @@ import { Input, Resource } from '.'
    Each transition defines it's own Input Prop Schema.
 */
 
-type InputType = 'boolean'|'int'|'float'|'string'|'date'|'datetime'|'object'|'enum'|'child'
+type InputType = 'boolean'|'int'|'float'|'string'|'date'|'datetime'|'object'|'enum'|'child'|'children'
+type InputScope = 'public'|'protected'|'private'
 type InputRequiredWhen = {
     param: string
     value: string | number | boolean
@@ -25,6 +26,7 @@ export class InputPropSchema<T> {
     
     protected required?: boolean | InputRequiredWhen = true
     protected default?: T
+    protected scope: InputScope = 'public';
     protected rules: InputRule<T>[] = []
     protected name!: string
 
@@ -52,6 +54,16 @@ export class InputPropSchema<T> {
         let prop = new InputPropSchema<T|undefined>(this.alias, this.type, this.list, this.members, this.options, this.service);
         prop.required = { param, value };
         return prop;
+    }
+
+    protected() {
+        this.scope = 'protected';
+        return this;
+    }
+
+    private() {
+        this.scope = 'private';
+        return this;
     }
 
     /* Runtime Rules */
@@ -136,7 +148,10 @@ export function InputProp(alias: string) {
         }),
         child: <R extends Resource<any,any>, T extends keyof R['$']['Transitions']>
             (resource: R, transition: T) =>
-                new InputPropSchema<Input<R['$'],T>>(alias, 'child', false, resource.$.Transitions[transition].input, undefined, undefined, resource)
+                new InputPropSchema<Input<R['$'],T>>(alias, 'child', false, resource.$.Transitions[transition].input, undefined, undefined, resource),
+        children: <R extends Resource<any,any>, T extends keyof R['$']['Transitions']>
+            (resource: R, transition: T) =>
+                new InputPropSchema<Input<R['$'],T>[]>(alias, 'children', true, resource.$.Transitions[transition].input, undefined, undefined, resource)
     }
 }
 
@@ -153,6 +168,7 @@ export type InputProp<T> = {
         value: string | number | boolean
     }
     default?: T
+    scope: InputScope
     rules: InputRule<T>[]
     alias: string
     type: InputType
@@ -179,14 +195,24 @@ function inputPropToValidator(prop: InputProp<any>): Record<string,any> {
         date: 'date',
         datetime: 'date',
         object: 'object',
-        child: 'object'
+        child: 'object',
+        children: 'array'
     }[prop.type];
     let validator = (schema as any)[type];
-    if (prop.required !== true)
-        validator = validator.optional;
     
-    if (typeof prop.required === 'object') {
-        let rule = [ rules.requiredWhen(prop.required.param, 'in', [prop.required.value]) ]
+    let rule = []
+    if (prop.required !== true || prop.scope !== 'public')
+        validator = validator.optional;
+    if (typeof prop.required === 'object')
+        rule.push(rules.requiredWhen(prop.required.param, 'in', [prop.required.value]))
+    if (prop.required) {
+        if (prop.scope === 'protected')
+            rule.push(rules.requiredWhen('__scope__', 'in', ['protected','private']))
+        else if (prop.scope === 'private')
+            rule.push(rules.requiredWhen('__scope__', 'in', ['private']))
+    }
+
+    if (rule.length) {
         if (type === 'enum') return validator(prop.options, rule);
         if (type === 'date') return validator(undefined, rule);
         return validator(rule);
@@ -202,7 +228,11 @@ export function inputSchemaToValidator(input: InputSchema): TypedSchema {
         let prop = input[k] as any as InputProp<any>;
         let validator = inputPropToValidator(input[k] as any) as any;
         if (prop.members) {
-            validator = validator.members(inputSchemaToValidator(prop.members));
+            const members = inputSchemaToValidator(prop.members);
+            if (prop.type === 'children')
+                validator = validator.members(schema.object().members(members))
+            else 
+                validator = validator.members(members);
         }
         input[k] = validator;
     })

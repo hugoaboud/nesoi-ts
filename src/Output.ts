@@ -6,16 +6,17 @@
 */
 
 import { Resource, Type } from "."
+import { GraphPropSchema } from "./Graph"
 import { Client } from "./Util/Auth"
 import Service from "./Util/Service"
 
-type PropSchemaType = 'boolean'|'int'|'decimal'|'string'|'money'|'child'|'children'|'serviceChild'|'serviceChildren'
+type OutputType = 'boolean'|'int'|'decimal'|'string'|'money'|'child'|'children'|'serviceChild'|'serviceChildren'
 type PropSource = 'model'|'entity'
 
 //@ts-ignore: The T parameter is used to infer the property type.
 export class PropSchema<Model, T> {    
     constructor(
-        public type: PropSchemaType,
+        public type: OutputType,
         public source: PropSource,
         public prop: keyof Model,
         public fn: (obj: Model, client: Client) => any,
@@ -59,7 +60,7 @@ export function Prop<Model>() {
 }
 
 export interface OutputSchema<Model> {
-    [name: string]: PropSchema<Model, any> | OutputSchema<Model>
+    [name: string]: PropSchema<Model, any> | GraphPropSchema<any, any> | OutputSchema<Model>
 }
 
 export type PropType<T> = T extends PropSchema<any, infer X> ? X : {[k in keyof T]: PropType<T[k]>}

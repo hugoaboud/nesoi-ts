@@ -2,16 +2,31 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { Status } from './Service';
 import { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
+import { Resource, Schema } from '..';
 
 export interface User {
     id: number
 }
 
+export interface ClientAction<S extends Schema, R extends Resource<any,S>> {
+    resource: R
+    transition: keyof R['$']['Transitions']
+}
+
 export class Client {
     public trx!: TransactionClientContract
+    public stack: ClientAction<any,any>[] = []
     constructor(
         public user: User
     ) {}
+
+    pushAction<S extends Schema, R extends Resource<any,S>>(resource: R, transition: keyof R['$']['Transitions']) {
+        this.stack.push({resource, transition});
+    }
+
+    popAction() {
+        return this.stack.pop();
+    }
 }
 
 export abstract class EndpointAuth {

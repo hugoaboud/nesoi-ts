@@ -35,6 +35,7 @@ export interface Transition<Model, From, To, Input> {
     input: Input
     guards?: TransitionCallback<Model,Input,boolean>[]
     fn?: TransitionCallback<Model,Input,void>
+    after?: TransitionCallback<Model,Input,void>
 }
 export function Transition<Model, From, To, Input extends InputSchema>(transition: Transition<Model, From, To, Input>) { return transition; }
 
@@ -65,26 +66,89 @@ export class StateMachine< S extends Schema > {
         })
     }
 
-    /* Input Validation / Sanitization */
+    /* 
+        Input Sanitization
+        - Remove internal use '__keys__' 
+        - Remove protected/private props according to scope
+    */
+
+    private async sanitize(
+        client: Client,
+        t: keyof S['Transitions'],
+        input: Record<string,any>
+    ): Promise<void> {
+
+        let scope = 'public';
+        if (client.stack.length > 0) {
+            const last_action = client.stack[client.stack.length-1];
+            if (this === last_action.resource) scope = 'private';
+            else scope = 'protected';
+        }
+
+        if (scope === 'public')
+            this.filterInternalKeys(input);
+        if (scope !== 'private')
+            this.filterInputScope(scope as any, this.$.Transitions[t as any].input, input);
+        
+        input.__scope__ = scope;
+    }
+
+    private filterInternalKeys(
+        input: Record<string,any>
+    ): void {
+        Object.keys(input).map(key => {
+            const prop = input[key];
+            if (Array.isArray(prop))
+                return prop.forEach((i:any) => this.filterInternalKeys(i));
+            if (typeof prop === 'object')
+                return this.filterInternalKeys(prop);
+            if (key.startsWith('__') && key.endsWith('__'))
+                delete input[key];
+        })
+    }
+
+    private filterInputScope(
+        scope: 'public'|'protected',
+        schema: InputSchema,
+        input: Record<string,any>
+    ): void {
+        Object.keys(schema).map(key => {
+            const prop = schema[key] as any as InputProp<any>;
+            if (prop.scope === 'public' ||
+               (prop.scope === 'protected' && scope !== 'public')) {
+                if (prop.members)
+                    this.filterInputScope(scope, prop.members, input[key]);
+                return;
+            }
+            if (Array.isArray(input)) input.forEach((i:any) => delete i[key]);
+            else delete input[key];
+        })
+    }
+
+    /* 
+        Input Validation
+        - Validate presence and type of props
+        - Validate runtime/database/service rules
+        - Assign default values
+    */
 
     private async validate(
         t: keyof S['Transitions'],
         input: Record<string,any>
     ): Promise<void> {
-        console.log('validate', t, this.$.Model.table);
-        if (input.__validated__) return;
-        console.log('do validate', t, this.$.Model.table);
+        const schema = this.$.Transitions[t as any].input;
         await this.validateFields(t, input);
-        await this.validateRules(this.$.Transitions[t as any].input, input, 'runtime');
-        await this.validateRules(this.$.Transitions[t as any].input, input, 'database');
-        this.assignDefaults(this.$.Transitions[t as any].input, input);
-        this.flagValidated(this.$.Transitions[t as any].input, input);
+        await this.validateRules(schema, input, 'runtime');
+        await this.validateRules(schema, input, 'database');
+        this.assignDefaults(schema, input);
+        this.flagValidated(schema, input);
     }
 
     private async validateFields(
         t: keyof S['Transitions'],
         input: Record<string,any>
     ): Promise<void> {
+        if (input.__validated__ && input.__scope__ == 'public') return;
         const schema = this.validator[t as string];
         await validator.validate({ schema, data: input });
     }
@@ -98,6 +162,13 @@ export class StateMachine< S extends Schema > {
         for (let key in schema) {
             const prop = schema[key] as any as InputProp<any>;
             if (isEmpty(input[key])) continue;
+            
+            if (input.__validated__ && prop.scope === 'public') {
+                if (prop.members)
+                    await this.validateRules(prop.members, input[key], scope, prop.child);    
+                continue;
+            }
+
             for (let r in prop.rules) {
                 const rule = prop.rules[r];
                 if (rule.scope !== scope) continue;
@@ -116,6 +187,13 @@ export class StateMachine< S extends Schema > {
     ): void {
         Object.keys(schema).map(key => {
             const prop = schema[key] as any as InputProp<any>;
+            
+            if (input.__validated__ && prop.scope === 'public') {
+                if (prop.members)
+                    this.assignDefaults(prop.members, input[key] || {});
+                return;
+            }
+
             if (isEmpty(input[key]) && !isEmpty(prop.default))
                 input[key] = prop.default;
             if (prop.members)
@@ -130,8 +208,12 @@ export class StateMachine< S extends Schema > {
         input.__validated__ = true;
         Object.keys(schema).map(key => {
             const prop = schema[key] as any as InputProp<any>;
-            if (prop.type === 'child' && input[key])
-                this.flagValidated(prop.members || {}, input[key]);
+            if (input[key]) {
+                if (prop.type === 'child')
+                    this.flagValidated(prop.members || {}, input[key]);
+                if (prop.type === 'children')
+                    input[key].forEach((i: any) => this.flagValidated(prop.members || {}, i))
+            }
         })
     }
 
@@ -180,8 +262,11 @@ export class StateMachine< S extends Schema > {
         if (!this.isCurrentState(obj, trans.from)) {
             throw Exception.NoTransitionFromCurrentState(trans.alias, old_state.alias);
         }
-        
+
+        await this.sanitize(client, t, input);
         await this.validate(t, input);
+
+        client.pushAction(this as any, t);
 
         if (trans.guards) await this.guard(client, trans.guards, obj, input, obj.state).catch(e => {
             throw Exception.TransitionGuardFailed(e);
@@ -198,9 +283,11 @@ export class StateMachine< S extends Schema > {
         }
         await this.save(client, obj);
 
+        if (trans.after) await trans.after(obj, input, client, from);
         if (old_state.after_exit) await old_state.after_exit(obj, client);
         if (new_state.after_enter) await new_state.after_enter(obj, client);
 
+        client.popAction();
     }
 
     private async save(
@@ -217,6 +304,7 @@ export class StateMachine< S extends Schema > {
         await obj.save().catch(e => {
             throw Exception.SaveFailed(e)
         })
+        await obj.refresh();
     }
 
 }
