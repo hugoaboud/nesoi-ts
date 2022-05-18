@@ -1,6 +1,7 @@
 import { schema, rules, TypedSchema } from '@ioc:Adonis/Core/Validator'
 import Service from "./Util/Service"
 import BaseModel from './Model'
+import { Input, Resource } from '.'
 
 /*
    [ Input Props ]
@@ -8,7 +9,7 @@ import BaseModel from './Model'
    Each transition defines it's own Input Prop Schema.
 */
 
-type InputType = 'boolean'|'int'|'float'|'string'|'date'|'datetime'|'object'|'enum'
+type InputType = 'boolean'|'int'|'float'|'string'|'date'|'datetime'|'object'|'enum'|'child'
 type InputRequiredWhen = {
     param: string
     value: string | number | boolean
@@ -31,12 +32,14 @@ export class InputPropSchema<T> {
         protected alias: string,
         protected type: InputType,
         protected list?: boolean,
-        protected members?: InputSchema,
-        protected options?: readonly string[],
-        protected service?: {
+
+        protected members?: InputSchema,        // object | child
+        protected options?: readonly string[],  // enum
+        protected service?: {                   // serviceKey(s)
             type: typeof Service,
             resource: string
-        }
+        },
+        protected child?: Resource<any,any>
     ) {}
 
     optional(default_value?: T) {
@@ -123,14 +126,17 @@ export function InputProp(alias: string) {
         string: new InputPropSchema<string>(alias, 'string'),
         date: new InputPropSchema<string>(alias, 'date'),
         datetime: new InputPropSchema<string>(alias, 'datetime'),
-        object: <T extends InputSchema>(schema: T) => new InputPropSchema<{[k in keyof T]: InputPropType<T[k]>}>(alias, 'object', false, schema),
+        object: <T extends InputSchema>(members: T) => new InputPropSchema<{[k in keyof T]: InputPropType<T[k]>}>(alias, 'object', false, members),
         enum: <T extends readonly string[]>(options: T) => new InputPropSchema<T[number]>(alias, 'enum', false, undefined, options),
         serviceKey: <T extends typeof Service>(service: T, resource: keyof T['resources']) => new InputPropSchema<number>(alias, 'int', false, undefined, undefined, {
             type: service, resource: resource as string
         }),
         serviceKeys: <T extends typeof Service>(service: T, resource: keyof T['resources']) => new InputPropSchema<number>(alias, 'int', true, undefined, undefined, {
             type: service, resource: resource as string
-        })
+        }),
+        child: <R extends Resource<any,any>, T extends keyof R['$']['Transitions']>
+            (resource: R, transition: T) =>
+                new InputPropSchema<Input<R['$'],T>>(alias, 'child', false, resource.$.Transitions[transition].input, undefined, undefined, resource)
     }
 }
 
@@ -157,6 +163,7 @@ export type InputProp<T> = {
         type: typeof Service
         resource: string
     }
+    child?: Resource<any,any>
 }
 
 /** */
@@ -171,7 +178,8 @@ function inputPropToValidator(prop: InputProp<any>): Record<string,any> {
         enum: 'enum',
         date: 'date',
         datetime: 'date',
-        object: 'object'
+        object: 'object',
+        child: 'object'
     }[prop.type];
     let validator = (schema as any)[type];
     if (prop.required !== true)

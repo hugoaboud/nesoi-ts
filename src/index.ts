@@ -5,6 +5,7 @@ import { Prop as $Prop } from './Output';
 import { InputProp as $InputProp } from './Input';
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { DateTime } from 'luxon'
+import { Client } from "./Util/Auth";
 
 /**
     [Resource Schema]
@@ -41,10 +42,10 @@ export type Type<S extends Schema> =
     { 
         id: number
         created_by: number
-        updated_by?: number
+        updated_by: number
         deleted_by?: number
         created_at: DateTime
-        updated_at?: DateTime
+        updated_at: DateTime
         deleted_at?: DateTime
     } & 
     { [k in keyof S['Output']]: PropType<S['Output'][k]> } & 
@@ -76,7 +77,7 @@ export const Transition = $Transition
     A custom State Machine for handling data in a database.
 */
 
-type Input<S extends Schema,T extends keyof S['Transitions']> = TransitionInput<S['Transitions'][T]>
+export type Input<S extends Schema,T extends keyof S['Transitions']> = TransitionInput<S['Transitions'][T]>
 type Model<S extends Schema> = InstanceType<S['Model']>
 
 export class Resource< T, S extends Schema > extends StateMachine<S>{
@@ -97,27 +98,27 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
 
     /* CRUD */
 
-    async create(input: Input<S,'create'>): Promise<T> {
+    async create(client: Client, input: Input<S,'create'>): Promise<T> {
         const obj = new this.$.Model() as Model<S>;
         obj.state = 'void';
-        await this.run('create', obj, input);
-        await obj.save();
+        await this.run(client, 'create', obj, input);
         await obj.refresh();
-        return this.build(obj);
+        return this.build(client, obj);
     }
 
-    async readAll(): Promise<T[]> {
+    async readAll(client: Client): Promise<T[]> {
         const objs = await this.$.Model.query() as Model<S>[];
-        return this.buildAll(objs);
+        return this.buildAll(client, objs);
     }
 
-    async readOne(id: number): Promise<T> {
+    async readOne(client: Client, id: number): Promise<T> {
         const obj = await this.$.Model.find(id) as Model<S>;
         if (!obj) throw Exception.NotFound(id);
-        return this.build(obj);
+        return this.build(client, obj);
     }
 
     private async build(
+        client: Client,
         obj: Model<S>,
         schema: S['Output']|undefined = undefined,
         entity: Record<string, any> = {}
@@ -135,15 +136,15 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
                 continue;
             }
             entity[key] = {};
-            await this.build(obj, schema[key] as any, entity[key]);
+            await this.build(client, obj, schema[key] as any, entity[key]);
         }
 
         return entity as any;
     }
     
-    private async buildAll(objs: Model<S>[]): Promise<T[]> {
+    private async buildAll(client: Client, objs: Model<S>[]): Promise<T[]> {
         return Promise.all(objs.map(
-            async obj => this.build(obj)
+            async obj => this.build(client, obj)
         ));
     }
 

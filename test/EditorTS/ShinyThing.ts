@@ -1,4 +1,5 @@
 import { Schema, Prop, InputProp, Transition, Type, Resource } from '../../src/index';
+import Particle from './Particle';
 import ShinyThingModel from './ShinyThingModel';
 
 const _ = Prop<ShinyThingModel>()
@@ -68,14 +69,19 @@ const S = Schema({
             alias: 'Quebrar',
             from: 'created',
             to: 'broken',
-            input: {}
+            input: {
+                particle: $('Partícula').child(Particle, 'create')
+            },
+            fn: async (obj: ShinyThingModel, input) => {
+                
+            }
         })
 
     }
 })
-type S = typeof S;
-interface $ extends S {}
 
+type S = typeof S;
+export interface $ShinyThing extends S {}
 type ShinyThing = Type<typeof S>;
-const ShinyThing = new Resource<ShinyThing, $>(S);
+const ShinyThing = new Resource<ShinyThing, $ShinyThing>(S);
 export default ShinyThing;
