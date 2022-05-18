@@ -46,11 +46,11 @@ export abstract class BaseController {
 
     }
 
-    async guard(ctx: HttpContextContract, db = true, fn: (ctx: HttpContextContract) => Promise<any>) {
+    async guard(ctx: HttpContextContract, managed_trx = true, fn: (ctx: HttpContextContract) => Promise<any>) {
 
         this.client = (ctx as any).client;
         
-        if (!db) return fn.bind(this)(ctx);
+        if (!managed_trx) return fn.bind(this)(ctx);
 
         return Database.transaction(async trx => {
             this.client.trx = trx;

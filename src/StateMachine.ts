@@ -192,6 +192,10 @@ export class StateMachine< S extends Schema > {
         if (new_state.before_enter) await new_state.before_enter(obj, client);
         
         obj.state = to;
+        if (t === 'create') {
+            obj.created_at = DateTime.now();
+            obj.created_by = client.user.id;
+        }
         await this.save(client, obj);
 
         if (old_state.after_exit) await old_state.after_exit(obj, client);
@@ -203,10 +207,6 @@ export class StateMachine< S extends Schema > {
         client: Client,
         obj: Model<S>
     ) {
-        if (obj.state === 'void') {
-            obj.created_at = DateTime.now();
-            obj.created_by = client.user.id;
-        }
         obj.updated_at = DateTime.now();
         obj.updated_by = client.user.id;
         if (obj.state === 'deleted') {

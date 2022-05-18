@@ -6,6 +6,7 @@ import { InputProp as $InputProp } from './Input';
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { DateTime } from 'luxon'
 import { Client } from "./Util/Auth";
+import { ResourceSchemaValidator } from "./Util/Validator";
 
 /**
     [Resource Schema]
@@ -84,6 +85,7 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
 
     constructor($: S) {
         super($);
+        ResourceSchemaValidator.validate($);
         this.$.Output = {
             id: Prop<any>()('id').int,
             ...this.$.Output,
@@ -107,12 +109,16 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
     }
 
     async readAll(client: Client): Promise<T[]> {
-        const objs = await this.$.Model.query() as Model<S>[];
+        let query = this.$.Model.query();
+        if (client.trx) query = query.useTransaction(client.trx);
+        const objs = await query as Model<S>[];
         return this.buildAll(client, objs);
     }
 
     async readOne(client: Client, id: number): Promise<T> {
-        const obj = await this.$.Model.find(id) as Model<S>;
+        let query = this.$.Model.query();
+        if (client.trx) query = query.useTransaction(client.trx);
+        const obj = await query.where('id', id).first() as Model<S>;
         if (!obj) throw Exception.NotFound(id);
         return this.build(client, obj);
     }
@@ -130,9 +136,9 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
             if (prop instanceof PropSchema) {
                 if (prop.source != 'model') continue;
                 if (prop.async)
-                    entity[key] = await prop.fn(obj);
+                    entity[key] = await prop.fn(obj, client);
                 else
-                    entity[key] = prop.fn(obj);
+                    entity[key] = prop.fn(obj, client);
                 continue;
             }
             entity[key] = {};

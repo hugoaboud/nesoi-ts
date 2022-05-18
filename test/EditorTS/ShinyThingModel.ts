@@ -11,6 +11,9 @@ export default class ShinyThingModel extends BaseModel {
 	public price!: number
 
 	@column()
+	public coin!: string
+
+	@column()
 	public color!: number
 
 	@column()
