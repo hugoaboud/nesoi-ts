@@ -3,11 +3,12 @@ import { OutputSchema, PropSchema, PropType } from "./Output"
 import { TransitionSchema, TransitionInput, StateSchema, Transition as $Transition, StateMachine } from "./StateMachine"
 import { Prop as $Prop } from './Output';
 import { InputProp as $InputProp } from './Input';
-import { GraphProp as $GraphProp } from './Graph';
+import { GraphLink as $GraphLink, GraphLinkSchema } from './Graph';
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { DateTime } from 'luxon'
 import { Client } from "./Util/Auth";
 import { ResourceSchemaValidator } from "./Util/Validator";
+import { CamelToSnakeCase } from "./Util/String";
 
 /**
     [Resource Schema]
@@ -59,11 +60,11 @@ export type Type<S extends Schema> =
 export const Prop = $Prop
 
 /**
-    [Resource GraphProp]
+    [Resource GraphLink]
     
 */
 
-export const GraphProp = $GraphProp
+export const GraphLink = $GraphLink
 
 /**
     [Resource InputProp]
@@ -102,6 +103,12 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
         };
     }
 
+    name(snake_case = false): string {
+        const name = this.$.Model.name.replace('Model','');
+        if (!snake_case) return name;
+        return CamelToSnakeCase(name);
+    }
+
     /* CRUD */
 
     async create(
@@ -132,18 +139,19 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
     }
 
     async readAll(client: Client): Promise<T[]> {
-        let query = this.$.Model.query();
-        if (client.trx) query = query.useTransaction(client.trx);
-        const objs = await query as Model<S>[];
+        const objs = await this.readAllFromModel(client, this.$.Model);
         return this.buildAll(client, objs);
     }
 
     async readOne(client: Client, id: number): Promise<T> {
-        let query = this.$.Model.query();
-        if (client.trx) query = query.useTransaction(client.trx);
-        const obj = await query.where('id', id).first() as Model<S>;
+        const obj = await this.readOneFromModel(client, this.$.Model, id);
         if (!obj) throw Exception.NotFound(id);
         return this.build(client, obj);
+    }
+
+    async readOneGroup(client: Client, key: keyof Model<S>, id: number): Promise<T[]> {
+        const objs = await this.readOneGroupFromModel(client, this.$.Model, key as string, id);
+        return this.buildAll(client, objs);
     }
 
     private async build(
@@ -164,6 +172,13 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
                     entity[key] = prop.fn(obj, client);
                 continue;
             }
+            else if (prop instanceof GraphLinkSchema) {
+                if (prop.many)
+                    entity[key] = await this.buildLinkMany(client, obj, prop);
+                else
+                    entity[key] = await this.buildLinkSingle(client, obj, prop);
+                continue;
+            }
             entity[key] = {};
             await this.build(client, obj, schema[key] as any, entity[key]);
         }
@@ -175,6 +190,56 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
         return Promise.all(objs.map(
             async obj => this.build(client, obj)
         ));
+    }
+
+    private async buildLinkSingle<R extends Resource<any,S>>(
+        client: Client,
+        obj: Model<S>,
+        link: GraphLinkSchema<R>
+    ) {
+        const fkey = link.resource.name(true) + '_id';
+        return link.resource.readOne(client, (obj as any)[fkey]);
+    }
+
+    private async buildLinkMany<R extends Resource<any,S>>(
+        client: Client,
+        obj: Model<S>,
+        link: GraphLinkSchema<R>
+    ) {
+        const fkey = this.name(true) + '_id';
+        return link.resource.readOneGroup(client, fkey as any, obj.id);
+    }
+
+    /* DB */
+
+    private async readOneFromModel(
+        client: Client,
+        model: typeof BaseModel,
+        id: number
+    ) {
+        let query = model.query();
+        if (client.trx) query = query.useTransaction(client.trx);
+        return query.where('id', id).first() as Model<S> | null;
+    }
+
+    private async readAllFromModel(
+        client: Client,
+        model: typeof BaseModel
+    ) {
+        let query = model.query();
+        if (client.trx) query = query.useTransaction(client.trx);
+        return await query as Model<S>[];
+    }
+
+    private async readOneGroupFromModel(
+        client: Client,
+        model: typeof BaseModel,
+        key: string,
+        id: number
+    ) {
+        let query = model.query();
+        if (client.trx) query = query.useTransaction(client.trx);
+        return await query.where(key, id) as Model<S>[];
     }
 
 }

@@ -6,7 +6,7 @@
 */
 
 import { Resource, Type } from "."
-import { GraphPropSchema } from "./Graph"
+import { GraphLinkSchema } from "./Graph"
 import { Client } from "./Util/Auth"
 import Service from "./Util/Service"
 
@@ -60,7 +60,7 @@ export function Prop<Model>() {
 }
 
 export interface OutputSchema<Model> {
-    [name: string]: PropSchema<Model, any> | GraphPropSchema<any, any> | OutputSchema<Model>
+    [name: string]: PropSchema<Model, any> | GraphLinkSchema<any> | OutputSchema<Model>
 }
 
 export type PropType<T> = T extends PropSchema<any, infer X> ? X : {[k in keyof T]: PropType<T[k]>}
