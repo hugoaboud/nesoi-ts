@@ -20,7 +20,7 @@ export function Schema<
     M extends typeof BaseModel,
     Model extends InstanceType<M>,
     Output extends OutputSchema<Model>,
-    States extends StateSchema<Model>,
+    States extends StateSchema,
     Transitions extends TransitionSchema<Model,States>
 >(schema: {
     Model: M
@@ -28,12 +28,20 @@ export function Schema<
     States: States
     Transitions: Transitions
 }) {
-    return schema;
+    //return schema;
+    return class Schema implements Schema {
+        Model!: M
+        Output!: Output
+        States!: States
+        Transitions!: Transitions
+        static $ = schema;
+    }
 }
+
 export type Schema = {
     Model: typeof BaseModel
     Output: OutputSchema<any>
-    States: StateSchema<any>
+    States: StateSchema
     Transitions: Record<string, $Transition<any,any,any,any>>
 }
 
@@ -50,7 +58,7 @@ export type Type<S extends Schema> =
         created_at: DateTime
         updated_at: DateTime
     } & 
-    { [k in keyof S['Output']]: PropType<S['Output'][k]> } & 
+    { [k in keyof S['Output']]: PropType<S['Output'][k]> } &
     Omit<{ [k in keyof S['Transitions']]: (input: TransitionInput<S['Transitions'][k]>) => string }, 'create'>
 
 /**
@@ -88,7 +96,7 @@ export const GraphLink = $GraphLink
 export type Input<S extends Schema,T extends keyof S['Transitions']> = TransitionInput<S['Transitions'][T]>
 type Model<S extends Schema> = InstanceType<S['Model']>
 
-export class Resource< T, S extends Schema > extends StateMachine<S>{
+export class Machine< T, S extends Schema > extends StateMachine<S>{
 
     constructor($: S) {
         super($);
@@ -195,7 +203,7 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
         ));
     }
 
-    private async buildLinkSingle<R extends Resource<any,S>>(
+    private async buildLinkSingle<R extends Machine<any,S>>(
         client: Client,
         obj: Model<S>,
         link: GraphLinkSchema<R>
@@ -204,7 +212,7 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
         return link.resource.readOne(client, (obj as any)[fkey]);
     }
 
-    private async buildLinkMany<R extends Resource<any,S>>(
+    private async buildLinkMany<R extends Machine<any,S>>(
         client: Client,
         obj: Model<S>,
         link: GraphLinkSchema<R>

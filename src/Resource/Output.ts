@@ -5,7 +5,7 @@
    Such values are built from the database object.
 */
 
-import { Resource, Type } from "."
+import { Machine, Type } from "."
 import { GraphLinkSchema } from "./Graph"
 import { Client } from "../Util/Auth"
 
@@ -42,7 +42,7 @@ export function Prop<Model>() {
             return (obj as any).coin + obj[prop]
         }),
 
-        child: <R extends Resource<any,any>>(resource: R) =>
+        child: <R extends Machine<any,any>>(resource: R) =>
             new PropSchema<Model, Type<R['$']>>('child', source, prop, (obj: Model, client) => {
                 return resource.readOne(client, obj[prop] as any)
             }, false, true)

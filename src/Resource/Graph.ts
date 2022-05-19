@@ -1,6 +1,6 @@
-import { Resource } from '.'
+import { Machine } from '.'
 
-export class GraphLinkSchema<R extends Resource<any,any>> {
+export class GraphLinkSchema<R extends Machine<any,any>> {
     
     constructor(
         public resource: R,
@@ -13,10 +13,10 @@ export type GraphLinkType<T> = T extends GraphLinkSchema<infer X> ? X : never
 
 export const GraphLink = {
 
-    child: <R extends Resource<any,any>>(resource: R) => 
+    child: <R extends Machine<any,any>>(resource: R) => 
         new GraphLinkSchema(resource),
     
-    children: <R extends Resource<any,any>>(resource: R) => 
+    children: <R extends Machine<any,any>>(resource: R) => 
         new GraphLinkSchema(resource, true)
 
 }

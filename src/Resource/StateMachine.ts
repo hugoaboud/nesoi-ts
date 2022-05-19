@@ -2,7 +2,7 @@ import { validator, schema, TypedSchema, ParsedTypedSchema } from '@ioc:Adonis/C
 import { InputProp, InputPropType, InputSchema, inputSchemaToValidator } from "./Input"
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { DateTime } from 'luxon';
-import { Resource, Schema } from ".";
+import { Machine, Schema } from ".";
 import { isEmpty } from '../Util/Validator';
 import { Client } from '../Util/Auth';
 
@@ -13,7 +13,7 @@ export type TransitionCallback<Model, Input, Output> = (obj: Model, input: { [k 
 
 /* State */
 
-export interface State<Model> {
+export interface Hook<Model> {
     alias: string
     
     before_exit?: StateCallback<Model,void>
@@ -22,9 +22,9 @@ export interface State<Model> {
     after_enter?: StateCallback<Model,void>
 }
 
-export type StateSchema<Model> = {
-    created: State<Model>
-} & Record<string, State<Model>>
+export type StateSchema = {
+    created: string
+} & Record<string, string>
 
 /* Transition */
 
@@ -57,7 +57,7 @@ export class StateMachine< S extends Schema > {
         public $: S
     ) {
         $.States = {
-            void:     { alias: '' },
+            void: '',
             ...$.States
         }
         Object.keys($.Transitions).forEach(t => {
@@ -157,7 +157,7 @@ export class StateMachine< S extends Schema > {
         schema: InputSchema,
         input: Record<string,any>,
         scope: 'runtime' | 'database' | 'service',
-        resource?: Resource<any,any>
+        resource?: Machine<any,any>
     ): Promise<void> {
         for (let key in schema) {
             const prop = schema[key] as any as InputProp<any>;
@@ -257,10 +257,10 @@ export class StateMachine< S extends Schema > {
         const from = obj.state;
         const to = trans.to;
         const old_state = this.$.States[from];
-        const new_state = this.$.States[to];
+        // const new_state = this.$.States[to];
         
         if (!this.isCurrentState(obj, trans.from)) {
-            throw Exception.NoTransitionFromCurrentState(trans.alias, old_state.alias);
+            throw Exception.NoTransitionFromCurrentState(trans.alias, old_state);
         }
 
         await this.sanitize(client, t, input);
@@ -272,9 +272,9 @@ export class StateMachine< S extends Schema > {
             throw Exception.TransitionGuardFailed(e);
         });       
         
-        if (old_state.before_exit) await old_state.before_exit(obj, client);
+        // if (old_state.before_exit) await old_state.before_exit(obj, client);
         if (trans.fn) await trans.fn(obj, input, client, from);
-        if (new_state.before_enter) await new_state.before_enter(obj, client);
+        // if (new_state.before_enter) await new_state.before_enter(obj, client);
         
         obj.state = to;
         if (t === 'create') {
@@ -284,8 +284,8 @@ export class StateMachine< S extends Schema > {
         await this.save(client, obj);
 
         if (trans.after) await trans.after(obj, input, client, from);
-        if (old_state.after_exit) await old_state.after_exit(obj, client);
-        if (new_state.after_enter) await new_state.after_enter(obj, client);
+        // if (old_state.after_exit) await old_state.after_exit(obj, client);
+        // if (new_state.after_enter) await new_state.after_enter(obj, client);
 
         client.popAction();
     }

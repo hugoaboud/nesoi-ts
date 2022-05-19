@@ -1,7 +1,7 @@
 import { schema, rules, TypedSchema } from '@ioc:Adonis/Core/Validator'
 import Service from "../Service"
 import BaseModel from './Model'
-import { Input, Resource } from '.'
+import { Input, Machine } from '.'
 
 /*
    [ Input Props ]
@@ -41,7 +41,7 @@ export class InputPropSchema<T> {
             type: typeof Service,
             resource: string
         },
-        protected child?: Resource<any,any>
+        protected child?: Machine<any,any>
     ) {}
 
     optional(default_value?: T) {
@@ -140,10 +140,10 @@ export function InputProp(alias: string) {
         datetime: new InputPropSchema<string>(alias, 'datetime'),
         object: <T extends InputSchema>(members: T) => new InputPropSchema<{[k in keyof T]: InputPropType<T[k]>}>(alias, 'object', false, members),
         enum: <T extends readonly string[]>(options: T) => new InputPropSchema<T[number]>(alias, 'enum', false, undefined, options),
-        child: <R extends Resource<any,any>, T extends keyof R['$']['Transitions']>
+        child: <R extends Machine<any,any>, T extends keyof R['$']['Transitions']>
             (resource: R, transition: T) =>
                 new InputPropSchema<Input<R['$'],T>>(alias, 'child', false, resource.$.Transitions[transition].input, undefined, undefined, resource),
-        children: <R extends Resource<any,any>, T extends keyof R['$']['Transitions']>
+        children: <R extends Machine<any,any>, T extends keyof R['$']['Transitions']>
             (resource: R, transition: T) =>
                 new InputPropSchema<Input<R['$'],T>[]>(alias, 'children', true, resource.$.Transitions[transition].input, undefined, undefined, resource)
     }
@@ -173,7 +173,7 @@ export type InputProp<T> = {
         type: typeof Service
         resource: string
     }
-    child?: Resource<any,any>
+    child?: Machine<any,any>
 }
 
 /** */

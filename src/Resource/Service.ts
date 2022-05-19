@@ -57,7 +57,7 @@ export type Schema = {
 
 
 /**
-    [Resource Type]
+    [Machine Type]
     Merges the given type properties with transition methods.
 */
 
@@ -67,13 +67,13 @@ export type Type<S extends Schema> =
     Omit<{ [k in keyof S['Transitions']]: (input: TransitionInput<S['Transitions'][k]>) => Promise<void> }, 'create'>
 
 /**
-    [Service Resource]
+    [Service Machine]
     A custom State Machine for handling data in a service.
 */
 
 export type Input<S extends Schema,T extends keyof S['Transitions']> = TransitionInput<S['Transitions'][T]>
 
-export class Resource<T, S extends Schema> extends R.Resource<T,{
+export class Machine<T, S extends Schema> extends R.Machine<T,{
     Model: any
     Output: S['Output']
     States: any
