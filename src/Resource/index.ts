@@ -60,13 +60,6 @@ export type Type<S extends Schema> =
 export const Prop = $Prop
 
 /**
-    [Resource GraphLink]
-    
-*/
-
-export const GraphLink = $GraphLink
-
-/**
     [Resource InputProp]
     Input validator property.
 */
@@ -79,6 +72,12 @@ export const InputProp = $InputProp
 */
 
 export const Transition = $Transition
+
+/**
+    [Resource GraphLink]
+*/
+
+export const GraphLink = $GraphLink
 
 /**
     [Resource]

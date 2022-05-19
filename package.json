@@ -1,7 +1,7 @@
 {
-  "name": "adonis-graph-db",
-  "version": "0.1.1",
-  "description": "Graph-Oriented SQL Database for AdonisJS",
+  "name": "nesoi-ts",
+  "version": "0.2.2",
+  "description": "Micro-framework for quick development of distributed architectures.",
   "repository": "https://github.com/hugoaboud/adonis-graph-db.git",
   "author": "Hugo Aboud <hugoaboud@gmail.com>",
   "license": "MIT",

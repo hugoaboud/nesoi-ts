@@ -56,13 +56,15 @@ export default class Console {
     }
 
     // Prints the header
-    static header(module: string) {                                      
-        console.log(this.colored("  _____             _   ____  _____ ", 'lightblue'))
-        console.log(this.colored(" |   __|___ ___ ___| |_|    \\| __  |", 'lightblue'))
-        console.log(this.colored(" |  |  |  _| .'| . |   |  |  | __ -|", 'lightblue'))
-        console.log(this.colored(" |_____|_| |__,|  _|_|_|____/|_____|", 'lightblue'))
-        console.log(this.colored("               |_|                  ", 'lightblue'))
-        console.log(this.colored("                               "+pack.version, 'cyan'))
+    static header(module: string) {     
+        console.log(this.colored("                                        __             ", 'lightblue'))
+        console.log(this.colored("                              __       /\\ \\__          ", 'lightblue'))
+        console.log(this.colored("  ___      __    ____    ___ /\\_\\      \\ \\ ,_\\   ____  ", 'lightblue'))
+        console.log(this.colored("/' _ `\\  /'__`\\ /',__\\  / __`\\/\\ \\  ____\\ \\ \\/  /',__\\ ", 'lightblue'))
+        console.log(this.colored("/\\ \\/\\ \\/\\  __//\\__, `\\/\\ \\L\\ \\ \\ \\/\\___\\\\ \\ \\_/\\__, `\\", 'lightblue'))
+        console.log(this.colored("\\ \\_\\ \\_\\ \\____\\/\\____/\\ \\____/\\ \\_\\/___/ \\ \\__\\/\\____/", 'lightblue'))
+        console.log(this.colored(" \\/_/\\/_/\\/____/\\/___/  \\/___/  \\/_/        \\/__/\\/___/ ", 'lightblue'))       
+        console.log(this.colored("                                                 "+pack.version, 'cyan'))
         console.log("[ " + module + " ]")
         console.log()
     
