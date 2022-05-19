@@ -6,29 +6,25 @@ import { Machine, Schema } from ".";
 import { isEmpty } from '../Util/Validator';
 import { Client } from '../Util/Auth';
 
-/* Callbacks */
-
-export type StateCallback<Model, Output> = (obj: Model, client: Client) => Promise<Output>
-export type TransitionCallback<Model, Input, Output> = (obj: Model, input: { [k in keyof Input]: InputPropType<Input[k]> }, client: Client, from: string) => Promise<Output>
-
-/* State */
-
-export interface Hook<Model> {
-    alias: string
-    
-    before_exit?: StateCallback<Model,void>
-    before_enter?: StateCallback<Model,void>
-    after_exit?: StateCallback<Model,void>
-    after_enter?: StateCallback<Model,void>
-}
+/* 
+    State
+*/
 
 export type StateSchema = {
     created: string
-} & Record<string, string>
+} &
+    Record<string, string>
 
-/* Transition */
+/* 
+    Transition
+*/
 
-export interface Transition<Model, From, To, Input> {
+export interface Transition<
+    Model,
+    From,
+    To,
+    Input
+> {
     alias: string
     from: From | From[] 
     to: To
@@ -37,13 +33,122 @@ export interface Transition<Model, From, To, Input> {
     fn?: TransitionCallback<Model,Input,void>
     after?: TransitionCallback<Model,Input,void>
 }
-export function Transition<Model, From, To, Input extends InputSchema>(transition: Transition<Model, From, To, Input>) { return transition; }
 
-export type TransitionSchema<Model,States> = {
+export function Transition<
+    Model,
+    From,
+    To,
+    Input extends InputSchema
+>(
+    transition: Transition<Model,
+    From,
+    To,
+    Input
+>) {
+    return transition;
+}
+
+export type TransitionSchema<
+    Model,
+    States
+> = {
     create: Transition<Model,'void','created',any>
-} & Record<string, Transition<Model,keyof States|'void'|'*',keyof States,any>>
+} &
+    Record<string, Transition<Model,keyof States|'void'|'*',keyof States,any>>
 
-export type TransitionInput<E extends Transition<any,any,any,any>> = { [k in keyof E['input']]: InputPropType<E['input'][k]> }
+export type TransitionInput<
+    E extends Transition<any,any,any,any>
+> = {
+    [k in keyof E['input']]: InputPropType<E['input'][k]>
+}
+
+/* 
+    Hook
+*/
+
+type HookMoment = 'enter' | 'exit'
+export interface Hook<
+    Model,
+    States,
+    Transitions extends TransitionSchema<Model,States>
+> {
+    on: HookMoment
+    state: keyof States
+    fn: HookCallback<Model,Transitions,void>
+}
+
+export function Hook<
+    Model,
+    States,
+    Transitions extends TransitionSchema<Model,States>
+>(
+    moment: HookMoment,
+    state: keyof States,
+    fn: HookCallback<Model,Transitions,void>
+) {
+    return {
+        moment,
+        key: state,
+        fn
+    }
+}
+
+export type HookSchema<
+    Model,
+    States,
+    Transitions extends TransitionSchema<Model,States>
+> = 
+    Hook<
+        Model,
+        States,
+        Transitions
+    >[]
+
+/* 
+    Methods
+*/
+
+export type Method<
+    T extends Transition<any,any,any,any>
+> = (
+    client: Client,
+    input: TransitionInput<T>
+) => {}
+
+export type Methods<
+    Transitions extends TransitionSchema<any,any>
+> = {
+    [x in keyof Omit<Transitions,'create'>] : Method<Transitions[x]>
+}
+
+/*
+    Callbacks
+*/
+
+export type HookCallback<
+    Model,
+    Transitions extends TransitionSchema<Model, any>,
+    Output
+> = (
+    obj: Model,
+    client: Client,
+    run: Methods<Transitions>
+) =>
+    Promise<Output>
+
+export type TransitionCallback<
+    Model,
+    Input,
+    Output
+> = (
+    obj: Model,
+    input: {
+        [k in keyof Input]: InputPropType<Input[k]>
+    },
+    client: Client,
+    from: string
+) =>
+    Promise<Output>
 
 /* State Machine */
 
@@ -52,6 +157,7 @@ type Model<S extends Schema> = InstanceType<S['Model']>
 export class StateMachine< S extends Schema > {
 
     private validator: Record<string, ParsedTypedSchema<TypedSchema>> = {}
+    private methods: Record<string, () => void> = {}
 
     constructor(
         public $: S
@@ -63,6 +169,7 @@ export class StateMachine< S extends Schema > {
         Object.keys($.Transitions).forEach(t => {
             let event = $.Transitions[t];
             this.validator[t] = schema.create(inputSchemaToValidator(event.input));
+            this.methods[t] = () => {}
         })
     }
 

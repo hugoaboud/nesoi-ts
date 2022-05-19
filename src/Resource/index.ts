@@ -1,6 +1,6 @@
 import BaseModel from "./Model"
 import { OutputSchema, PropSchema, PropType } from "./Output"
-import { TransitionSchema, TransitionInput, StateSchema, Transition as $Transition, StateMachine } from "./StateMachine"
+import { TransitionSchema, TransitionInput, StateSchema, Transition as $Transition, StateMachine, HookSchema, Method } from "./StateMachine"
 import { Prop as $Prop } from './Output';
 import { InputProp as $InputProp } from './Input';
 import { GraphLink as $GraphLink, GraphLinkSchema } from './Graph';
@@ -21,12 +21,14 @@ export function Schema<
     Model extends InstanceType<M>,
     Output extends OutputSchema<Model>,
     States extends StateSchema,
-    Transitions extends TransitionSchema<Model,States>
+    Transitions extends TransitionSchema<Model,States>,
+    Hooks extends HookSchema<Model, States, Transitions>
 >(schema: {
     Model: M
     Output: Output
     States: States
     Transitions: Transitions
+    Hooks?: Hooks
 }) {
     //return schema;
     return class Schema implements Schema {
@@ -34,6 +36,7 @@ export function Schema<
         Output!: Output
         States!: States
         Transitions!: Transitions
+        Hooks?: Hooks
         static $ = schema;
     }
 }
@@ -43,6 +46,7 @@ export type Schema = {
     Output: OutputSchema<any>
     States: StateSchema
     Transitions: Record<string, $Transition<any,any,any,any>>
+    Hooks?: HookSchema<any,any,any>
 }
 
 /**
@@ -59,7 +63,7 @@ export type Type<S extends Schema> =
         updated_at: DateTime
     } & 
     { [k in keyof S['Output']]: PropType<S['Output'][k]> } &
-    Omit<{ [k in keyof S['Transitions']]: (input: TransitionInput<S['Transitions'][k]>) => string }, 'create'>
+    Omit<{ [k in keyof S['Transitions']]: Method<S['Transitions'][k]> }, 'create'>
 
 /**
     [Resource Prop]

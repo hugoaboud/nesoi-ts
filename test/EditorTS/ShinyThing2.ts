@@ -65,9 +65,21 @@ class $ShinyThing extends R.Schema({
             }
         })
 
-    }
+    },
+
+    Hooks: [
+        {
+            on: 'enter',
+            state: 'broken',
+            fn: async (obj: ShinyThingModel, client, run) => {
+                
+            }
+        }
+    ]
 }){}
 
 type ShinyThing = R.Type<$ShinyThing>;
 const ShinyThing = new R.Machine<ShinyThing, $ShinyThing>($ShinyThing.$);
 export default ShinyThing;
+
+let a = {} as ShinyThing;
