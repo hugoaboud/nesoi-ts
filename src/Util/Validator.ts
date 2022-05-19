@@ -1,9 +1,9 @@
-import { Resource, Schema } from "..";
+import { Resource, Schema } from "../Resource";
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { Status } from "./Service";
-import { GraphLinkSchema } from "../Graph";
-import { PropSchema } from "../Output";
-import BaseModel from "../Model";
+import { GraphLinkSchema } from "../Resource/Graph";
+import { PropSchema } from "../Resource/Output";
+import BaseModel from "../Resource/Model";
 
 export function isEmpty(val: any): boolean {
     return (val == null || val.length == 0)

@@ -1,5 +1,5 @@
 import { column } from '@ioc:Adonis/Lucid/Orm'
-import BaseModel from '../../src/Model'
+import BaseModel from '../../src/Resource/Model'
 
 export default class ShinyThingModel extends BaseModel {
 	public static table = 'shiny_things'

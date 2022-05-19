@@ -7,8 +7,8 @@
 
 import { Resource, Type } from "."
 import { GraphLinkSchema } from "./Graph"
-import { Client } from "./Util/Auth"
-import Service from "./Util/Service"
+import { Client } from "../Util/Auth"
+import Service from "../Util/Service"
 
 type OutputType = 'boolean'|'int'|'decimal'|'string'|'money'|'child'|'children'|'serviceChild'|'serviceChildren'
 type PropSource = 'model'|'entity'

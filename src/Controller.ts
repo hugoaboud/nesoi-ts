@@ -3,7 +3,7 @@ import Database from '@ioc:Adonis/Lucid/Database';
 import { Client, EndpointAuth } from './Util/Auth';
 import { Verb } from './Util/Service';
 import Route from '@ioc:Adonis/Core/Route'
-import { Resource } from '.';
+import { Resource } from './Resource';
 
 export class Middleware {}
 

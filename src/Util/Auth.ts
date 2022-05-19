@@ -2,7 +2,7 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { Status } from './Service';
 import { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
-import { Resource, Schema } from '..';
+import { Resource, Schema } from '../Resource';
 
 export interface User {
     id: number

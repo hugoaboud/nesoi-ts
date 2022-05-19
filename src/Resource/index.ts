@@ -6,9 +6,9 @@ import { InputProp as $InputProp } from './Input';
 import { GraphLink as $GraphLink, GraphLinkSchema } from './Graph';
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { DateTime } from 'luxon'
-import { Client } from "./Util/Auth";
-import { ResourceSchemaValidator } from "./Util/Validator";
-import { CamelToSnakeCase } from "./Util/String";
+import { Client } from "../Util/Auth";
+import { ResourceSchemaValidator } from "../Util/Validator";
+import { CamelToSnakeCase } from "../Util/String";
 
 /**
     [Resource Schema]

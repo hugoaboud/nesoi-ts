@@ -1,5 +1,5 @@
 import { schema, rules, TypedSchema } from '@ioc:Adonis/Core/Validator'
-import Service from "./Util/Service"
+import Service from "../Util/Service"
 import BaseModel from './Model'
 import { Input, Resource } from '.'
 

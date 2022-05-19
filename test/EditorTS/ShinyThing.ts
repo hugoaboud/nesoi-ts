@@ -1,4 +1,4 @@
-import { Schema, Prop, InputProp, Transition, Type, Resource } from '../../src/index';
+import { Schema, Prop, InputProp, Transition, Type, Resource } from '../../src/Resource/index';
 import Particle from './Particle';
 import ShinyThingModel from './ShinyThingModel';
 

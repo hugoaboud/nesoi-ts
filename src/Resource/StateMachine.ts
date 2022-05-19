@@ -3,8 +3,8 @@ import { InputProp, InputPropType, InputSchema, inputSchemaToValidator } from ".
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { DateTime } from 'luxon';
 import { Resource, Schema } from ".";
-import { isEmpty } from './Util/Validator';
-import { Client } from './Util/Auth';
+import { isEmpty } from '../Util/Validator';
+import { Client } from '../Util/Auth';
 
 /* Callbacks */
 
