@@ -1,7 +1,7 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Database from '@ioc:Adonis/Lucid/Database';
 import { Client, EndpointAuth } from './Util/Auth';
-import { Verb } from './Util/Service';
+import { Verb } from './Service';
 import Route from '@ioc:Adonis/Core/Route'
 import { Resource } from './Resource';
 

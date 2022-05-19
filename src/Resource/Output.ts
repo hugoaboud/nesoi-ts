@@ -8,7 +8,6 @@
 import { Resource, Type } from "."
 import { GraphLinkSchema } from "./Graph"
 import { Client } from "../Util/Auth"
-import Service from "../Util/Service"
 
 type OutputType = 'boolean'|'int'|'decimal'|'string'|'money'|'child'|'children'|'serviceChild'|'serviceChildren'
 type PropSource = 'model'|'entity'
@@ -46,16 +45,8 @@ export function Prop<Model>() {
         child: <R extends Resource<any,any>>(resource: R) =>
             new PropSchema<Model, Type<R['$']>>('child', source, prop, (obj: Model, client) => {
                 return resource.readOne(client, obj[prop] as any)
-            }, false, true),
+            }, false, true)
 
-        serviceChild: <T extends typeof Service>(_service: T, _resource: keyof T['resources']) =>
-            new PropSchema<Model, Record<string,any>>('serviceChild', source, prop, (obj: Model) => {
-                return obj[prop]
-            }, false, true),
-        serviceChildren: <T extends typeof Service>(_service: T, _resource: keyof T['resources']) =>
-            new PropSchema<Model, Record<string,any>[]>('serviceChildren', source, prop, (obj: Model) => {
-                return obj[prop]
-            }, true, true),
     })
 }
 

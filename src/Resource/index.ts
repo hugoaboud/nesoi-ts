@@ -9,6 +9,7 @@ import { DateTime } from 'luxon'
 import { Client } from "../Util/Auth";
 import { ResourceSchemaValidator } from "../Util/Validator";
 import { CamelToSnakeCase } from "../Util/String";
+import { Status } from "../Service";
 
 /**
     [Resource Schema]
@@ -16,13 +17,13 @@ import { CamelToSnakeCase } from "../Util/String";
 */
 
 export function Schema<
-    T extends typeof BaseModel,
-    Model extends InstanceType<T>,
+    M extends typeof BaseModel,
+    Model extends InstanceType<M>,
     Output extends OutputSchema<Model>,
     States extends StateSchema<Model>,
     Transitions extends TransitionSchema<Model,States>
 >(schema: {
-    Model: T
+    Model: M
     Output: Output
     States: States
     Transitions: Transitions
@@ -92,6 +93,7 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
     constructor($: S) {
         super($);
         ResourceSchemaValidator.validate(this, $);
+        if (($ as any).Service) return;
         this.$.Output = {
             id: Prop<any>()('id').int,
             ...this.$.Output,
@@ -153,7 +155,9 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
         return this.buildAll(client, objs);
     }
 
-    private async build(
+    /* Build */
+
+    protected async build(
         client: Client,
         obj: Model<S>,
         schema: S['Output']|undefined = undefined,
@@ -209,9 +213,9 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
         return link.resource.readOneGroup(client, fkey as any, obj.id);
     }
 
-    /* DB */
+    /* Model */
 
-    private async readOneFromModel(
+    protected async readOneFromModel(
         client: Client,
         model: typeof BaseModel,
         id: number
@@ -221,7 +225,7 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
         return query.where('id', id).first() as Model<S> | null;
     }
 
-    private async readAllFromModel(
+    protected async readAllFromModel(
         client: Client,
         model: typeof BaseModel
     ) {
@@ -230,7 +234,7 @@ export class Resource< T, S extends Schema > extends StateMachine<S>{
         return await query as Model<S>[];
     }
 
-    private async readOneGroupFromModel(
+    protected async readOneGroupFromModel(
         client: Client,
         model: typeof BaseModel,
         key: string,
@@ -248,7 +252,7 @@ class Exception extends BaseException {
     static code = 'E_RESOURCE'
 
     static NotFound(id: number) {
-        return new this(`Não encontrado: ${id}`, 402, this.code);
+        return new this(`Não encontrado: ${id}`, Status.BADREQUEST, this.code);
     }
 
 }

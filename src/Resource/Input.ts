@@ -1,5 +1,5 @@
 import { schema, rules, TypedSchema } from '@ioc:Adonis/Core/Validator'
-import Service from "../Util/Service"
+import Service from "../Service"
 import BaseModel from './Model'
 import { Input, Resource } from '.'
 
@@ -140,12 +140,6 @@ export function InputProp(alias: string) {
         datetime: new InputPropSchema<string>(alias, 'datetime'),
         object: <T extends InputSchema>(members: T) => new InputPropSchema<{[k in keyof T]: InputPropType<T[k]>}>(alias, 'object', false, members),
         enum: <T extends readonly string[]>(options: T) => new InputPropSchema<T[number]>(alias, 'enum', false, undefined, options),
-        serviceKey: <T extends typeof Service>(service: T, resource: keyof T['resources']) => new InputPropSchema<number>(alias, 'int', false, undefined, undefined, {
-            type: service, resource: resource as string
-        }),
-        serviceKeys: <T extends typeof Service>(service: T, resource: keyof T['resources']) => new InputPropSchema<number>(alias, 'int', true, undefined, undefined, {
-            type: service, resource: resource as string
-        }),
         child: <R extends Resource<any,any>, T extends keyof R['$']['Transitions']>
             (resource: R, transition: T) =>
                 new InputPropSchema<Input<R['$'],T>>(alias, 'child', false, resource.$.Transitions[transition].input, undefined, undefined, resource),

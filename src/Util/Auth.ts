@@ -1,6 +1,6 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
-import { Status } from './Service';
+import { Status } from '../Service';
 import { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
 import { Resource, Schema } from '../Resource';
 
@@ -16,6 +16,7 @@ export interface ClientAction<S extends Schema, R extends Resource<any,S>> {
 export class Client {
     public trx!: TransactionClientContract
     public stack: ClientAction<any,any>[] = []
+    public tokens: Record<string,string> = {}
     constructor(
         public user: User
     ) {}

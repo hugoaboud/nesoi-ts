@@ -1,6 +1,6 @@
 import { Resource, Schema } from "../Resource";
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
-import { Status } from "./Service";
+import { Status } from "../Service";
 import { GraphLinkSchema } from "../Resource/Graph";
 import { PropSchema } from "../Resource/Output";
 import BaseModel from "../Resource/Model";
