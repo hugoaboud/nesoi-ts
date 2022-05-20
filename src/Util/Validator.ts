@@ -1,9 +1,10 @@
-import { Resource, Schema } from "../Resource";
+import { Machine } from "../Resource";
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { Status } from "../Service";
-import { GraphLinkSchema } from "../Resource/Graph";
-import { PropSchema } from "../Resource/Output";
+import { $, GraphLink } from "../Resource/Graph";
+import { Prop } from "../Resource/Output";
 import BaseModel from "../Resource/Model";
+import { Schema } from "../Resource/Schema";
 
 export function isEmpty(val: any): boolean {
     return (val == null || val.length == 0)
@@ -11,7 +12,7 @@ export function isEmpty(val: any): boolean {
 
 export class ResourceSchemaValidator {
 
-    static validate(resource: Resource<any,any>, $: Schema) {
+    static validate(resource: Machine<any,any>, $: Schema) {
 
         if (this.hasMonetaryProp($.Output))
             this.checkCoinColumn($.Model);
@@ -26,7 +27,7 @@ export class ResourceSchemaValidator {
     private static hasMonetaryProp(output: Schema['Output']) {
         for (let key in output) {
             const prop = output[key];
-            if (prop instanceof GraphLinkSchema) continue;
+            if (prop instanceof GraphLink) continue;
             if (!prop.fn) {
                 if (this.hasMonetaryProp(prop as Schema['Output']))
                     return true;
@@ -38,15 +39,15 @@ export class ResourceSchemaValidator {
     }
 
     private static getGraphLinks(output: Schema['Output']) {
-        const links: GraphLinkSchema<any>[] = []
+        const links: GraphLink<any>[] = []
 
         for (let key in output) {
             const prop = output[key];
-            if (prop instanceof GraphLinkSchema) {
+            if (prop instanceof GraphLink) {
                 links.push(prop);
                 continue;
             }
-            if (!(prop instanceof PropSchema)) {
+            if (!(prop instanceof Prop)) {
                 links.push(...this.getGraphLinks(prop))
             }
         }
@@ -59,9 +60,9 @@ export class ResourceSchemaValidator {
                 throw Exception.NoCoinOnMonetaryTable();
     }
 
-    private static checkGraphLinkFKey<S extends Schema, R extends Resource<any,S>>(
+    private static checkGraphLinkFKey<S extends Schema, R extends Machine<any,S>>(
         resource: R, model: typeof BaseModel,
-        link: GraphLinkSchema<R>
+        link: GraphLink<R>
     ) {
         if (link.many) {
             const fkey = resource.name(true) + '_id';

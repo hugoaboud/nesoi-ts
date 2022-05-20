@@ -1,10 +1,10 @@
-import * as R from '../../src/Resource/index';
+import { $, Type } from '../../src/Resource';
 import ShinyThingModel from './ShinyThingModel';
 
-const i = R.InputProp
-const o = R.Prop<ShinyThingModel>()
+const i = $.InputProp
+const o = $.Prop<ShinyThingModel>()
 
-class $ShinyThing extends R.Schema({
+class $ShinyThing extends $.Schema({
 
     Model: ShinyThingModel,
 
@@ -25,7 +25,7 @@ class $ShinyThing extends R.Schema({
 
     Transitions: {
 
-        create: R.Transition({
+        create: $.Transition({
             alias: 'Criar',
             from: 'void',
             to: 'created',
@@ -52,7 +52,7 @@ class $ShinyThing extends R.Schema({
             },
         }),
 
-        break: R.Transition({
+        break: $.Transition({
             alias: 'Quebrar',
             from: 'created',
             to: 'broken',
@@ -78,8 +78,8 @@ class $ShinyThing extends R.Schema({
     ]
 }){}
 
-type ShinyThing = R.Type<$ShinyThing>;
-const ShinyThing = new R.Machine<ShinyThing, $ShinyThing>($ShinyThing.$);
+type ShinyThing = Type<$ShinyThing>;
+const ShinyThing = new $.Machine.Resource<ShinyThing, $ShinyThing>($ShinyThing.$);
 export default ShinyThing;
 
 let a = {} as ShinyThing;

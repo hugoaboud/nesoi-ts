@@ -1,64 +1,49 @@
-import BaseModel from "./Model"
-import { OutputSchema, PropSchema, PropType } from "./Output"
-import { TransitionSchema, TransitionInput, StateSchema, Transition as $Transition, StateMachine, HookSchema, Method } from "./StateMachine"
-import { Prop as $Prop } from './Output';
-import { InputProp as $InputProp } from './Input';
-import { GraphLink as $GraphLink, GraphLinkSchema } from './Graph';
-import { Exception as BaseException } from '@adonisjs/core/build/standalone';
+import { Prop, $ as $Prop } from './Output';
+import { $ as $InputProp, InputPropBuilder } from './Input';
+import { GraphLink, $ as $GraphLink } from './Graph';
 import { DateTime } from 'luxon'
-import { Client } from "../Util/Auth";
-import { ResourceSchemaValidator } from "../Util/Validator";
-import { CamelToSnakeCase } from "../Util/String";
-import { Status } from "../Service";
+import { Schema as $Schema } from "./Schema";
+import { Method, Transition as $Transition } from "./StateMachine";
+import ResourceMachine from "./ResourceMachine";
+
+/** Type Helper: Extract Model from Schema */
+
+export type Model<S extends $Schema> = InstanceType<S['Model']>
 
 /**
-    [Resource Schema]
-    Schema which defines the resource behaviour.
+    [ Resource Prop Type ]
+    Extract the type from a Prop.
 */
 
-export function Schema<
-    M extends typeof BaseModel,
-    Model extends InstanceType<M>,
-    Output extends OutputSchema<Model>,
-    States extends StateSchema,
-    Transitions extends TransitionSchema<Model,States>,
-    Hooks extends HookSchema<Model, States, Transitions>
->(schema: {
-    Model: M
-    Output: Output
-    States: States
-    Transitions: Transitions
-    Hooks?: Hooks
-}) {
-    //return schema;
-    return class Schema implements Schema {
-        Model!: M
-        Output!: Output
-        States!: States
-        Transitions!: Transitions
-        Hooks?: Hooks
-        static $ = schema;
+export type PropType<T> =
+    T extends Prop<any, infer X> ? X : {
+        [ k in keyof T]: PropType<T[k] >
     }
-}
-
-export type Schema = {
-    Model: typeof BaseModel
-    Output: OutputSchema<any>
-    States: StateSchema
-    Transitions: Record<string, $Transition<any,any,any,any>>
-    Hooks?: HookSchema<any,any,any>
-}
 
 /**
-    [Resource Type]
+    [ Resource Graph Link Type ]
+    Extract the type from a Graph Link.
+*/
+
+export type GraphLinkType<T> =
+    T extends GraphLink<infer X> ? X : never
+
+/**
+    [ Resource Input Prop Type ]
+    Extract the type from a Input Prop.
+*/
+
+export type InputPropType<T> =
+    T extends InputPropBuilder<infer X> ? X : never
+
+/**
+    [ Resource Type ]
     Merges the given type properties with transition methods.
 */
 
-export type Type<S extends Schema> = 
+export type Type<S extends $Schema> = 
     { 
         id: number
-        // created_by: number
-        // updated_by: number
         created_at: DateTime
         updated_at: DateTime
     } & 
@@ -66,205 +51,17 @@ export type Type<S extends Schema> =
     Omit<{ [k in keyof S['Transitions']]: Method<S['Transitions'][k]> }, 'create'>
 
 /**
-    [Resource Prop]
-    Property of a resource entity.
-*/
+    [ Resource Schema Interface ]
+ */
+export namespace $ {
 
-export const Prop = $Prop
-
-/**
-    [Resource InputProp]
-    Input validator property.
-*/
-
-export const InputProp = $InputProp
-
-/**
-    [Resource InputProp]
-    Input validator property.
-*/
-
-export const Transition = $Transition
-
-/**
-    [Resource GraphLink]
-*/
-
-export const GraphLink = $GraphLink
-
-/**
-    [Resource]
-    A custom State Machine for handling data in a database.
-*/
-
-export type Input<S extends Schema,T extends keyof S['Transitions']> = TransitionInput<S['Transitions'][T]>
-type Model<S extends Schema> = InstanceType<S['Model']>
-
-export class Machine< T, S extends Schema > extends StateMachine<S>{
-
-    constructor($: S) {
-        super($);
-        ResourceSchemaValidator.validate(this, $);
-        if (($ as any).Service) return;
-        this.$.Output = {
-            id: Prop<any>()('id').int,
-            ...this.$.Output,
-            // created_by: Prop<any>()('created_by').int,
-            // updated_by: Prop<any>()('updated_by').int,
-            created_at: Prop<any>()('created_at').string,
-            updated_at: Prop<any>()('updated_at').string
-        };
-    }
-
-    name(snake_case = false): string {
-        const name = this.$.Model.name.replace('Model','');
-        if (!snake_case) return name;
-        return CamelToSnakeCase(name);
-    }
-
-    /* CRUD */
-
-    async create(
-        client: Client,
-        input: Input<S,'create'>,
-        extra?: Record<string,any>
-    ): Promise<T> {
-        const obj = new this.$.Model() as Model<S>;
-        obj.state = 'void';
-        if (extra) Object.assign(input, extra);
-        await this.run(client, 'create', obj, input);
-        return this.build(client, obj);
-    }
-
-    async createMany(
-        client: Client,
-        inputs: Input<S,'create'>[],
-        extra?: (input: Input<S,'create'>) => Record<string,any>
-    ): Promise<T[]> {
-        const objs = [] as T[];
-        for (let i in inputs) {
-            const input = inputs[i];
-            if (extra) Object.assign(input, extra(input));
-            const obj = await this.create(client, input);
-            objs.push(obj);
-        }
-        return objs;
-    }
-
-    async readAll(client: Client): Promise<T[]> {
-        const objs = await this.readAllFromModel(client, this.$.Model);
-        return this.buildAll(client, objs);
-    }
-
-    async readOne(client: Client, id: number): Promise<T> {
-        const obj = await this.readOneFromModel(client, this.$.Model, id);
-        if (!obj) throw Exception.NotFound(id);
-        return this.build(client, obj);
-    }
-
-    async readOneGroup(client: Client, key: keyof Model<S>, id: number): Promise<T[]> {
-        const objs = await this.readOneGroupFromModel(client, this.$.Model, key as string, id);
-        return this.buildAll(client, objs);
-    }
-
-    /* Build */
-
-    protected async build(
-        client: Client,
-        obj: Model<S>,
-        schema: S['Output']|undefined = undefined,
-        entity: Record<string, any> = {}
-    ): Promise<T> {
-        if (!schema) schema = this.$.Output;
-
-        for (let key in schema) {
-            const prop = schema![key];
-            if (prop instanceof PropSchema) {
-                if (prop.source != 'model') continue;
-                if (prop.async)
-                    entity[key] = await prop.fn(obj, client);
-                else
-                    entity[key] = prop.fn(obj, client);
-                continue;
-            }
-            else if (prop instanceof GraphLinkSchema) {
-                if (prop.many)
-                    entity[key] = await this.buildLinkMany(client, obj, prop);
-                else
-                    entity[key] = await this.buildLinkSingle(client, obj, prop);
-                continue;
-            }
-            entity[key] = {};
-            await this.build(client, obj, schema[key] as any, entity[key]);
-        }
-
-        return entity as any;
-    }
-    
-    private async buildAll(client: Client, objs: Model<S>[]): Promise<T[]> {
-        return Promise.all(objs.map(
-            async obj => this.build(client, obj)
-        ));
-    }
-
-    private async buildLinkSingle<R extends Machine<any,S>>(
-        client: Client,
-        obj: Model<S>,
-        link: GraphLinkSchema<R>
-    ) {
-        const fkey = link.resource.name(true) + '_id';
-        return link.resource.readOne(client, (obj as any)[fkey]);
-    }
-
-    private async buildLinkMany<R extends Machine<any,S>>(
-        client: Client,
-        obj: Model<S>,
-        link: GraphLinkSchema<R>
-    ) {
-        const fkey = this.name(true) + '_id';
-        return link.resource.readOneGroup(client, fkey as any, obj.id);
-    }
-
-    /* Model */
-
-    protected async readOneFromModel(
-        client: Client,
-        model: typeof BaseModel,
-        id: number
-    ) {
-        let query = model.query();
-        if (client.trx) query = query.useTransaction(client.trx);
-        return query.where('id', id).first() as Model<S> | null;
-    }
-
-    protected async readAllFromModel(
-        client: Client,
-        model: typeof BaseModel
-    ) {
-        let query = model.query();
-        if (client.trx) query = query.useTransaction(client.trx);
-        return await query as Model<S>[];
-    }
-
-    protected async readOneGroupFromModel(
-        client: Client,
-        model: typeof BaseModel,
-        key: string,
-        id: number
-    ) {
-        let query = model.query();
-        if (client.trx) query = query.useTransaction(client.trx);
-        return await query.where(key, id) as Model<S>[];
-    }
-
-}
-
-class Exception extends BaseException {
-
-    static code = 'E_RESOURCE'
-
-    static NotFound(id: number) {
-        return new this(`Não encontrado: ${id}`, Status.BADREQUEST, this.code);
+    export const Prop = $Prop
+    export const GraphLink = $GraphLink
+    export const InputProp = $InputProp
+    export const Transition = $Transition
+    export const Schema = $Schema
+    export const Machine = {
+        Resource: ResourceMachine
     }
 
 }

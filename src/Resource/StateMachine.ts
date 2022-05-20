@@ -1,23 +1,24 @@
 import { validator, schema, TypedSchema, ParsedTypedSchema } from '@ioc:Adonis/Core/Validator'
-import { InputProp, InputPropType, InputSchema, inputSchemaToValidator } from "./Input"
+import { InputProp, InputValidator } from "./Input"
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { DateTime } from 'luxon';
-import { Machine, Schema } from ".";
+import { InputPropType, Model } from ".";
 import { isEmpty } from '../Util/Validator';
 import { Client } from '../Util/Auth';
+import { InputSchema, Schema, TransitionSchema } from './Schema';
+import ResourceMachine from './ResourceMachine';
 
 /* 
-    State
-*/
+    [Resource State]
+    A state which can be assumed by a resource.
+ */
 
-export type StateSchema = {
-    created: string
-} &
-    Record<string, string>
+export type State = string
 
-/* 
-    Transition
-*/
+/**
+    [Resource Transition]
+    Defines a transition as a link between states.
+ */
 
 export interface Transition<
     Model,
@@ -40,21 +41,10 @@ export function Transition<
     To,
     Input extends InputSchema
 >(
-    transition: Transition<Model,
-    From,
-    To,
-    Input
->) {
+    transition: Transition<Model,From,To,Input>
+) {
     return transition;
 }
-
-export type TransitionSchema<
-    Model,
-    States
-> = {
-    create: Transition<Model,'void','created',any>
-} &
-    Record<string, Transition<Model,keyof States|'void'|'*',keyof States,any>>
 
 export type TransitionInput<
     E extends Transition<any,any,any,any>
@@ -62,17 +52,16 @@ export type TransitionInput<
     [k in keyof E['input']]: InputPropType<E['input'][k]>
 }
 
-/* 
-    Hook
-*/
-
-type HookMoment = 'enter' | 'exit'
+/**
+    [Resource Hook]
+    Defines a hook to be run when entering/exiting an state.
+ */
 export interface Hook<
     Model,
     States,
     Transitions extends TransitionSchema<Model,States>
 > {
-    on: HookMoment
+    on: 'enter' | 'exit'
     state: keyof States
     fn: HookCallback<Model,Transitions,void>
 }
@@ -82,7 +71,7 @@ export function Hook<
     States,
     Transitions extends TransitionSchema<Model,States>
 >(
-    moment: HookMoment,
+    moment: 'enter' | 'exit',
     state: keyof States,
     fn: HookCallback<Model,Transitions,void>
 ) {
@@ -93,20 +82,10 @@ export function Hook<
     }
 }
 
-export type HookSchema<
-    Model,
-    States,
-    Transitions extends TransitionSchema<Model,States>
-> = 
-    Hook<
-        Model,
-        States,
-        Transitions
-    >[]
-
-/* 
-    Methods
-*/
+/**
+    [Resource Method]
+    A method which runs a transition.
+ */
 
 export type Method<
     T extends Transition<any,any,any,any>
@@ -115,15 +94,21 @@ export type Method<
     input: TransitionInput<T>
 ) => {}
 
+/**
+    [Resource Methods]
+    A record of all method which aren't 'create'.
+ */
+
 export type Methods<
     Transitions extends TransitionSchema<any,any>
 > = {
     [x in keyof Omit<Transitions,'create'>] : Method<Transitions[x]>
 }
 
-/*
-    Callbacks
-*/
+/**
+    [Resource Hook Callback]
+    A callback run by a hook.
+ */
 
 export type HookCallback<
     Model,
@@ -135,6 +120,11 @@ export type HookCallback<
     run: Methods<Transitions>
 ) =>
     Promise<Output>
+
+/**
+    [Resource Transition Callback]
+    A callback run by a transition.
+ */
 
 export type TransitionCallback<
     Model,
@@ -150,11 +140,12 @@ export type TransitionCallback<
 ) =>
     Promise<Output>
 
-/* State Machine */
+/**
+    [State Machine]
+    An abstract state machine.
+ */
 
-type Model<S extends Schema> = InstanceType<S['Model']>
-
-export class StateMachine< S extends Schema > {
+export abstract class StateMachine< S extends Schema > {
 
     private validator: Record<string, ParsedTypedSchema<TypedSchema>> = {}
     private methods: Record<string, () => void> = {}
@@ -168,7 +159,7 @@ export class StateMachine< S extends Schema > {
         }
         Object.keys($.Transitions).forEach(t => {
             let event = $.Transitions[t];
-            this.validator[t] = schema.create(inputSchemaToValidator(event.input));
+            this.validator[t] = schema.create(InputValidator.fromSchema(event.input));
             this.methods[t] = () => {}
         })
     }
@@ -264,7 +255,7 @@ export class StateMachine< S extends Schema > {
         schema: InputSchema,
         input: Record<string,any>,
         scope: 'runtime' | 'database' | 'service',
-        resource?: Machine<any,any>
+        resource?: ResourceMachine<any,any>
     ): Promise<void> {
         for (let key in schema) {
             const prop = schema[key] as any as InputProp<any>;

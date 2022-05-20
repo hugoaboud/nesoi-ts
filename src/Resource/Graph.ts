@@ -1,6 +1,11 @@
-import { Machine } from '.'
+import ResourceMachine from './ResourceMachine'
 
-export class GraphLinkSchema<R extends Machine<any,any>> {
+/**
+   [ Resource Graph Link ]
+   A link to another resource, created at the Output Schema.
+*/
+
+export class GraphLink<R extends ResourceMachine<any,any>> {
     
     constructor(
         public resource: R,
@@ -9,14 +14,17 @@ export class GraphLinkSchema<R extends Machine<any,any>> {
 
 }
 
-export type GraphLinkType<T> = T extends GraphLinkSchema<infer X> ? X : never
+/**
+   [ Resource Graph Link Builder $ ]
+   Entry point for the Graph Link Builder.
+*/
 
-export const GraphLink = {
+export const $ = {
 
-    child: <R extends Machine<any,any>>(resource: R) => 
-        new GraphLinkSchema(resource),
+    child: <R extends ResourceMachine<any,any>>(resource: R) => 
+        new GraphLink(resource),
     
-    children: <R extends Machine<any,any>>(resource: R) => 
-        new GraphLinkSchema(resource, true)
+    children: <R extends ResourceMachine<any,any>>(resource: R) => 
+        new GraphLink(resource, true)
 
 }

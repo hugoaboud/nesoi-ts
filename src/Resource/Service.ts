@@ -1,8 +1,8 @@
 import * as R from ".";
 import { Client } from "../Util/Auth";
 import { Verb } from "../Service";
-import { OutputSchema, PropType } from "./Output";
 import Service from "../Service"
+import { OutputSchema } from "./Schema";
 
 /* Model */
 
@@ -63,7 +63,7 @@ export type Schema = {
 
 export type Type<S extends Schema> = 
     ReturnType<S['Format']> &
-    { [k in keyof S['Output']]: PropType<S['Output'][k]> } &
+    { [k in keyof S['Output']]: R.PropType<S['Output'][k]> } &
     Omit<{ [k in keyof S['Transitions']]: (input: TransitionInput<S['Transitions'][k]>) => Promise<void> }, 'create'>
 
 /**

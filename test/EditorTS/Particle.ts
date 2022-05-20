@@ -1,8 +1,8 @@
-import { Schema, Prop, InputProp, Transition, Type, Resource } from '../../src/Resource';
+import { Schema, Prop, InputPropBuilder, Transition, Type, Resource } from '../../src/Resource';
 import ParticleModel from './ParticleModel';
 
 const _ = Prop<ParticleModel>()
-const $ = InputProp
+const $ = InputPropBuilder
 const S = Schema({
 
     Model: ParticleModel,

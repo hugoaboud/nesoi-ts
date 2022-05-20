@@ -1,9 +1,9 @@
-import { Schema, Prop, InputProp, Transition, Type, Resource } from '../../src/Resource/index';
+import { Schema, Prop, InputPropBuilder, Transition, Type, Resource } from '../../src/Resource/index';
 import Particle from './Particle';
 import ShinyThingModel from './ShinyThingModel';
 
 const _ = Prop<ShinyThingModel>()
-const $ = InputProp
+const $ = InputPropBuilder
 const S = Schema({
 
     Model: ShinyThingModel,

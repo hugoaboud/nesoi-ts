@@ -1,12 +1,24 @@
 import { schema, rules, TypedSchema } from '@ioc:Adonis/Core/Validator'
-import Service from "../Service"
 import BaseModel from './Model'
-import { Input, Machine } from '.'
+import { InputPropType } from '.'
+import { InputSchema, Schema } from './Schema'
+import { TransitionInput } from './StateMachine'
+import ResourceMachine from './ResourceMachine'
+
+/**
+    [ Resource Input ]
+    Input type for a given transition.    
+ */
+
+export type Input<
+    S extends Schema,
+    T extends keyof S['Transitions']
+> = 
+    TransitionInput<S['Transitions'][T]
+>
 
 /*
-   [ Input Props ]
-   Input Props are validation definitions for incoming values.
-   Each transition defines it's own Input Prop Schema.
+   Definition Types
 */
 
 type InputType = 'boolean'|'int'|'float'|'string'|'date'|'datetime'|'object'|'enum'|'child'|'children'
@@ -21,40 +33,63 @@ type InputRule<T> = {
     msg: (prop: string) => string
 }
 
-/** Definitions for an InputProp, which belong into the validation schema. */
-export class InputPropSchema<T> {
+/**
+   [ Resource Input Prop ]
+   Type of an Input Prop built by the builder.
+*/
+export type InputProp<T> = {
+    name: string
+    required?: boolean | {
+        param: string
+        value: string | number | boolean
+    }
+    default?: T
+    rules: InputRule<T>[]
+    scope: InputScope
+    alias: string
+    type: InputType
+    list?: boolean
+    members?: InputSchema
+    options?: string[]
+    child?: ResourceMachine<any,any>
+}
+
+/**
+   [ Resource Input Prop Builder ]
+   Build an Input Prop by chaining rules.
+*/
+export class InputPropBuilder<T> {
     
+    protected name!: string
     protected required?: boolean | InputRequiredWhen = true
     protected default?: T
-    protected scope: InputScope = 'public';
     protected rules: InputRule<T>[] = []
-    protected name!: string
+    protected scope: InputScope = 'public';
 
     constructor(
         protected alias: string,
         protected type: InputType,
         protected list?: boolean,
-
-        protected members?: InputSchema,        // object | child
-        protected options?: readonly string[],  // enum
-        protected service?: {                   // serviceKey(s)
-            type: typeof Service,
-            resource: string
-        },
-        protected child?: Machine<any,any>
+        protected members?: InputSchema,
+        protected options?: readonly string[],
+        protected child?: ResourceMachine<any,any>
     ) {}
 
+    /* Optional Fields */
+
     optional(default_value?: T) {
-        let prop = new InputPropSchema<T|undefined>(this.alias, this.type, this.list, this.members, this.options, this.service);
+        let prop = new InputPropBuilder<T|undefined>(this.alias, this.type, this.list, this.members, this.options);
         prop.default = default_value;
         prop.required = false;
         return prop;
     }
     requiredIf(param: string, value: string|boolean|number = true) {
-        let prop = new InputPropSchema<T|undefined>(this.alias, this.type, this.list, this.members, this.options, this.service);
+        let prop = new InputPropBuilder<T|undefined>(this.alias, this.type, this.list, this.members, this.options);
         prop.required = { param, value };
         return prop;
     }
+
+    /* Input Scope */
 
     protected() {
         this.scope = 'protected';
@@ -127,108 +162,116 @@ export class InputPropSchema<T> {
     }
 }
 
-export type InputPropType<T> = T extends InputPropSchema<infer X> ? X : never
+/**
+   [ Resource Input Prop Builder $ ]
+   Entry point for the Input Prop Builder.
+*/
 
-/** Definition builder for an Input Prop. Used to declare validation schemas. */
-export function InputProp(alias: string) {
+export function $(alias: string) {
     return {
-        boolean: new InputPropSchema<boolean>(alias, 'boolean'),
-        int: new InputPropSchema<number>(alias, 'int'),
-        float: new InputPropSchema<number>(alias, 'float'),
-        string: new InputPropSchema<string>(alias, 'string'),
-        date: new InputPropSchema<string>(alias, 'date'),
-        datetime: new InputPropSchema<string>(alias, 'datetime'),
-        object: <T extends InputSchema>(members: T) => new InputPropSchema<{[k in keyof T]: InputPropType<T[k]>}>(alias, 'object', false, members),
-        enum: <T extends readonly string[]>(options: T) => new InputPropSchema<T[number]>(alias, 'enum', false, undefined, options),
-        child: <R extends Machine<any,any>, T extends keyof R['$']['Transitions']>
+        boolean: new InputPropBuilder<boolean>(
+            alias, 'boolean'
+        ),
+        int: new InputPropBuilder<number>(
+            alias, 'int'
+        ),
+        float: new InputPropBuilder<number>(
+            alias, 'float'
+        ),
+        string: new InputPropBuilder<string>(
+            alias, 'string'
+        ),
+        date: new InputPropBuilder<string>(
+            alias, 'date'
+        ),
+        datetime: new InputPropBuilder<string>(
+            alias, 'datetime'
+        ),
+        object: <T extends InputSchema>
+            (members: T) =>
+                new InputPropBuilder<{[k in keyof T]: InputPropType<T[k]>}>(
+                    alias, 'object', false, members
+                ),
+        enum: <T extends readonly string[]>
+            (options: T) =>
+                new InputPropBuilder<T[number]>(
+                    alias, 'enum', false, undefined, options
+                ),
+        child: <R extends ResourceMachine<any,any>, T extends keyof R['$']['Transitions']>
             (resource: R, transition: T) =>
-                new InputPropSchema<Input<R['$'],T>>(alias, 'child', false, resource.$.Transitions[transition].input, undefined, undefined, resource),
-        children: <R extends Machine<any,any>, T extends keyof R['$']['Transitions']>
+                new InputPropBuilder<Input<R['$'],T>>(
+                    alias, 'child', false,
+                    resource.$.Transitions[transition].input, undefined, resource
+                ),
+        children: <R extends ResourceMachine<any,any>, T extends keyof R['$']['Transitions']>
             (resource: R, transition: T) =>
-                new InputPropSchema<Input<R['$'],T>[]>(alias, 'children', true, resource.$.Transitions[transition].input, undefined, undefined, resource)
+                new InputPropBuilder<Input<R['$'],T>[]>(
+                    alias, 'children', true,
+                    resource.$.Transitions[transition].input, undefined, resource
+                )
     }
 }
 
-/** Input (validation) schema. */
-export interface InputSchema {
-    [name: string]: InputPropSchema<any>
-}
+/** 
+    [Resource Input Validator]
+    Build AdonisJS validator from Input Schemas.
+*/
 
-/** Metadata of InputProp. */
-export type InputProp<T> = {
-    name: string
-    required?: boolean | {
-        param: string
-        value: string | number | boolean
-    }
-    default?: T
-    scope: InputScope
-    rules: InputRule<T>[]
-    alias: string
-    type: InputType
-    list?: boolean
-    members?: InputSchema
-    options?: string[]
-    service?: {
-        type: typeof Service
-        resource: string
-    }
-    child?: Machine<any,any>
-}
+export abstract class InputValidator {
 
-/** */
-
-function inputPropToValidator(prop: InputProp<any>): Record<string,any> {
-    const type = {
-        int: 'number',
-        float: 'number',
-        money: 'number',
-        string: 'string',
-        boolean: 'boolean',
-        enum: 'enum',
-        date: 'date',
-        datetime: 'date',
-        object: 'object',
-        child: 'object',
-        children: 'array'
-    }[prop.type];
-    let validator = (schema as any)[type];
-    
-    let rule = []
-    if (prop.required !== true || prop.scope !== 'public')
-        validator = validator.optional;
-    if (typeof prop.required === 'object')
-        rule.push(rules.requiredWhen(prop.required.param, 'in', [prop.required.value]))
-    if (prop.required) {
-        if (prop.scope === 'protected')
-            rule.push(rules.requiredWhen('__scope__', 'in', ['protected','private']))
-        else if (prop.scope === 'private')
-            rule.push(rules.requiredWhen('__scope__', 'in', ['private']))
+    static fromSchema(input: InputSchema): TypedSchema {
+        input = JSON.parse(JSON.stringify(input));
+        Object.keys(input).forEach(k => {
+            let prop = input[k] as any as InputProp<any>;
+            let validator = this.fromProp(input[k] as any) as any;
+            if (prop.members) {
+                const members = this.fromSchema(prop.members);
+                if (prop.type === 'children')
+                    validator = validator.members(schema.object().members(members))
+                else 
+                    validator = validator.members(members);
+            }
+            input[k] = validator;
+        })
+        return input as any;
     }
 
-    if (rule.length) {
-        if (type === 'enum') return validator(prop.options, rule);
-        if (type === 'date') return validator(undefined, rule);
-        return validator(rule);
-    }
-    
-    if (prop.type === 'enum') return validator(prop.options);
-    return validator();
-}
-
-export function inputSchemaToValidator(input: InputSchema): TypedSchema {
-    input = JSON.parse(JSON.stringify(input));
-    Object.keys(input).forEach(k => {
-        let prop = input[k] as any as InputProp<any>;
-        let validator = inputPropToValidator(input[k] as any) as any;
-        if (prop.members) {
-            const members = inputSchemaToValidator(prop.members);
-            if (prop.type === 'children')
-                validator = validator.members(schema.object().members(members))
-            else 
-                validator = validator.members(members);
+    private static fromProp(prop: InputProp<any>): Record<string,any> {
+        const type = {
+            int: 'number',
+            float: 'number',
+            money: 'number',
+            string: 'string',
+            boolean: 'boolean',
+            enum: 'enum',
+            date: 'date',
+            datetime: 'date',
+            object: 'object',
+            child: 'object',
+            children: 'array'
+        }[prop.type];
+        let validator = (schema as any)[type];
+        
+        let rule = []
+        if (prop.required !== true || prop.scope !== 'public')
+            validator = validator.optional;
+        if (typeof prop.required === 'object')
+            rule.push(rules.requiredWhen(prop.required.param, 'in', [prop.required.value]))
+        if (prop.required) {
+            if (prop.scope === 'protected')
+                rule.push(rules.requiredWhen('__scope__', 'in', ['protected','private']))
+            else if (prop.scope === 'private')
+                rule.push(rules.requiredWhen('__scope__', 'in', ['private']))
         }
-        input[k] = validator;
-    })
-    return input as any;
+    
+        if (rule.length) {
+            if (type === 'enum') return validator(prop.options, rule);
+            if (type === 'date') return validator(undefined, rule);
+            return validator(rule);
+        }
+        
+        if (prop.type === 'enum') return validator(prop.options);
+        return validator();
+    }
+
 }

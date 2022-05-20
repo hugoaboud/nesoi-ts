@@ -1,21 +1,19 @@
-
-/*
-   [ Props ]
-   Props are values which belong to a Resource Entity.
-   Such values are built from the database object.
-*/
-
-import { Machine, Type } from "."
-import { GraphLinkSchema } from "./Graph"
+import { Type } from "."
 import { Client } from "../Util/Auth"
+import ResourceMachine from "./ResourceMachine"
 
-type OutputType = 'boolean'|'int'|'decimal'|'string'|'money'|'child'|'children'|'serviceChild'|'serviceChildren'
+type PropType = 'boolean'|'int'|'decimal'|'string'|'money'|'child'|'children'|'serviceChild'|'serviceChildren'
 type PropSource = 'model'|'entity'
 
+/**
+   [ Resource Prop ]
+   Type of an (Output) Prop.
+*/
+
 //@ts-ignore: The T parameter is used to infer the property type.
-export class PropSchema<Model, T> {    
+export class Prop<Model, T> {    
     constructor(
-        public type: OutputType,
+        public type: PropType,
         public source: PropSource,
         public prop: keyof Model,
         public fn: (obj: Model, client: Client) => any,
@@ -24,34 +22,33 @@ export class PropSchema<Model, T> {
     ) {}
 }
 
-export function Prop<Model>() {
+/**
+   [ Resource Output Prop $ ]
+   Entry point for the Output Prop.
+*/
+
+export function $<Model>() {
     return (prop: keyof Model, source: PropSource = 'model') => ({
-        boolean: new PropSchema<Model, boolean>('boolean', source, prop, (obj: Model) => {
+        boolean: new Prop<Model, boolean>('boolean', source, prop, (obj: Model) => {
             return obj[prop]
         }),
-        int: new PropSchema<Model, number>('int', source, prop, (obj: Model) => {
+        int: new Prop<Model, number>('int', source, prop, (obj: Model) => {
             return parseInt(obj[prop] as any)
         }),
-        decimal: new PropSchema<Model, number>('decimal', source, prop, (obj: Model) => {
+        decimal: new Prop<Model, number>('decimal', source, prop, (obj: Model) => {
             return obj[prop]
         }),
-        string: new PropSchema<Model, string>('string', source, prop, (obj: Model) => {
+        string: new Prop<Model, string>('string', source, prop, (obj: Model) => {
             return obj[prop]
         }),
-        money: new PropSchema<Model, string>('money', source, prop, (obj: Model) => {
+        money: new Prop<Model, string>('money', source, prop, (obj: Model) => {
             return (obj as any).coin + obj[prop]
         }),
 
-        child: <R extends Machine<any,any>>(resource: R) =>
-            new PropSchema<Model, Type<R['$']>>('child', source, prop, (obj: Model, client) => {
+        child: <R extends ResourceMachine<any,any>>(resource: R) =>
+            new Prop<Model, Type<R['$']>>('child', source, prop, (obj: Model, client) => {
                 return resource.readOne(client, obj[prop] as any)
             }, false, true)
 
     })
 }
-
-export interface OutputSchema<Model> {
-    [name: string]: PropSchema<Model, any> | GraphLinkSchema<any> | OutputSchema<Model>
-}
-
-export type PropType<T> = T extends PropSchema<any, infer X> ? X : {[k in keyof T]: PropType<T[k]>}
