@@ -130,7 +130,7 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
             entity[key] = {};
             await this.build(client, obj, schema[key] as any, entity[key]);
         }
-
+        this.buildMethods(obj, entity);
         return entity as any;
     }
     
@@ -156,6 +156,18 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
     ) {
         const fkey = this.name(true) + '_id';
         return link.resource.readOneGroup(client, fkey as any, obj.id);
+    }
+
+    protected buildMethods(
+        obj: Model<S>,
+        entity: Record<string, any>
+    ) {
+        Object.keys(this.$.Transitions).map(t => {
+            if (t === 'create') return;
+            entity[t] = async (client: Client, input: any) => {
+                return this.runFromModel(client, t, obj, input);
+            }
+        })
     }
 
     /* Model */

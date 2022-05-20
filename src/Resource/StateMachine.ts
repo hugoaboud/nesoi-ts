@@ -67,22 +67,6 @@ export interface Hook<
     fn: HookCallback<Model,Transitions,void>
 }
 
-export function Hook<
-    Model,
-    States,
-    Transitions extends TransitionSchema<Model,States>
->(
-    moment: 'enter' | 'exit',
-    state: keyof States,
-    fn: HookCallback<Model,Transitions,void>
-) {
-    return {
-        moment,
-        key: state,
-        fn
-    }
-}
-
 /**
     [Resource Method]
     A method which runs a transition.
@@ -93,7 +77,7 @@ export type Method<
 > = (
     client: Client,
     input: TransitionInput<T>
-) => {}
+) => Promise<void>
 
 /**
     [Resource Methods]
@@ -118,7 +102,7 @@ export type HookCallback<
 > = (
     obj: Model,
     client: Client,
-    run: Methods<Transitions>
+    run: <K extends keyof Transitions>(transition: K, input: TransitionInput<Transitions[K]>) => Promise<void>
 ) =>
     Promise<Output>
 
@@ -149,7 +133,6 @@ export type TransitionCallback<
 export abstract class StateMachine< S extends Schema > {
 
     private validator: Record<string, ParsedTypedSchema<TypedSchema>> = {}
-    private methods: Record<string, () => void> = {}
 
     constructor(
         public $: S
@@ -161,7 +144,6 @@ export abstract class StateMachine< S extends Schema > {
         Object.keys($.Transitions).forEach(t => {
             let event = $.Transitions[t];
             this.validator[t] = schema.create(InputValidator.fromSchema(event.input));
-            this.methods[t] = () => {}
         })
     }
 
@@ -325,10 +307,12 @@ export abstract class StateMachine< S extends Schema > {
         input: any,
         from: string
     ): Promise<boolean> {
+        let valid = true;
         for (let g in guards) {
-            let valid = await guards[g](obj, input, client, from);
-            if (!valid) return false;
+            valid = await guards[g](obj, input, client, from);
+            if (!valid) break;
         }
+        if (!valid) throw '<guard message goes here>'
         return true;
     }
 
@@ -371,9 +355,7 @@ export abstract class StateMachine< S extends Schema > {
             throw Exception.TransitionGuardFailed(e);
         });       
         
-        // if (old_state.before_exit) await old_state.before_exit(obj, client);
         if (trans.fn) await trans.fn(obj, input, client, from);
-        // if (new_state.before_enter) await new_state.before_enter(obj, client);
         
         obj.state = to;
         if (t === 'create') {
@@ -383,11 +365,22 @@ export abstract class StateMachine< S extends Schema > {
         await this.save(client, obj);
 
         if (trans.after) await trans.after(obj, input, client, from);
-        // if (old_state.after_exit) await old_state.after_exit(obj, client);
-        // if (new_state.after_enter) await new_state.after_enter(obj, client);
+
+        if (this.$.Hooks) {
+            for (let h in this.$.Hooks) {
+                const hook = this.$.Hooks[h];
+                if ((hook.state === from && hook.on === 'exit') ||
+                    (hook.state === to   && hook.on === 'enter'))
+                    await hook.fn(obj, client, async (t, input) => {
+                        return this.runFromModel(client, t as any, obj, input);
+                    });
+            }
+        }
 
         client.popAction();
     }
+
+
 
     private async save(
         client: Client,

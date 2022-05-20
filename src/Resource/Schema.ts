@@ -90,6 +90,6 @@ export type Schema = {
     Model: typeof BaseModel
     Output: OutputSchema<any>
     States: StateSchema
-    Transitions: Record<string, Transition<any,any,any,any>>
+    Transitions: TransitionSchema<any,StateSchema>
     Hooks?: HookSchema<any,any,any>
 }

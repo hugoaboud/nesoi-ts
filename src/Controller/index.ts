@@ -4,6 +4,7 @@ import { Auth } from '../Auth';
 import { Verb } from '../Service';
 import Route from '@ioc:Adonis/Core/Route'
 import { Client } from '../Auth/Client';
+import { ResourceController as $ResourceController } from './ResourceController';
 
 export class Middleware {}
 
@@ -86,7 +87,7 @@ export abstract class BaseController {
 /**
  * Decorates a Controller route method to use a middleware.
  */
- export function middleware(type: typeof Middleware) {
+export function middleware(type: typeof Middleware) {
     return function(target: any, key: string) { 
         let controller = (target.constructor as typeof BaseController);
         controller.$endpoints[key].middlewares.push(type.name)
@@ -99,3 +100,9 @@ export abstract class BaseController {
  * - /route/1.json -> 1
  */
 export const IdMatcher = { match: /^\d+(.json)?$/, cast: (id: string) => Number(id.replace('.json','')) };
+
+
+/**
+ * A Resource Controller
+ */
+export const ResourceController = $ResourceController
