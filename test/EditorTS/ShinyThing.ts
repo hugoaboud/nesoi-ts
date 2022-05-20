@@ -1,57 +1,45 @@
-import { Schema, Prop, InputPropBuilder, Transition, Type, Resource } from '../../src/Resource/index';
-import Particle from './Particle';
+import { $, Type } from '../../src/Resource';
 import ShinyThingModel from './ShinyThingModel';
 
-const _ = Prop<ShinyThingModel>()
-const $ = InputPropBuilder
-const S = Schema({
+const i = $.InputProp
+const o = $.Prop<ShinyThingModel>()
+
+class $ShinyThing extends $.Schema({
 
     Model: ShinyThingModel,
 
-    // 1. Prop argument is typed based on the model
-    // 2. Prop without type cannot be assigned
     Output: {
-        name:           _('name').string,
-        price:          _('price').money,
+        name:           o('name').string,
+        price:          o('price').money,
         decoration: {
-            color:      _('color').int,
-            shininess:  _('shininess').decimal
+            color:      o('color').int,
+            shininess:  o('shininess').decimal
         }
     },
 
-    // 3. State 'created' must exist
-    // 4. States must declare an alias
     States: {
-        created:  { alias: 'Criado' },
-        broken:   { alias: 'Quebrada' },
-        deleted:  { alias: 'Excluído' }
+        created: 'Criada',
+        broken:  'Quebrada',
+        deleted: 'Excluída'
     },
 
     Transitions: {
 
-        // 5. Transition 'create' must exist
-        // 6. Transition 'create' must be from 'void'
-        // 7. Transition 'create' must be to 'created'
-        create: Transition({
+        create: $.Transition({
             alias: 'Criar',
             from: 'void',
             to: 'created',
-            // 8. InputProp without type cannot be assigned
-            // 9. InputProp should have generic type according to schema type
-            // 10. Optional should show up as | undefined in generic
             input: {
-                name:           $('Nome').string.noDuplicate('code'),
-                price:          $('Preço').float.optional(0),
-                decoration:     $('Decoração').object({
-                    color:      $('Cor').enum(['red','blue','green'] as const),
-                    shininess:  $('Brilhância').float
-                // 11. Default value for optional object should be typed according to schema
+                name:           i('Nome').string.noDuplicate('code'),
+                price:          i('Preço').float.optional(0),
+                decoration:     i('Decoração').object({
+                    color:      i('Cor').enum(['red','blue','green'] as const),
+                    shininess:  i('Brilhância').float
                 }).optional({
                     color: 'red',
                     shininess: 0.3
                 })
             },
-            // 12. Input argument should be typed according to schema
             fn: async (obj: ShinyThingModel, input) => {
                 obj.name = input.name;
                 obj.price = input.price!;                
@@ -64,24 +52,28 @@ const S = Schema({
             },
         }),
 
-        // 13. Additional transitions should not be required
-        break: Transition({
+        break: $.Transition({
             alias: 'Quebrar',
             from: 'created',
             to: 'broken',
             input: {
-                particle: $('Partícula').child(Particle, 'create')
-            },
-            fn: async (obj: ShinyThingModel, input) => {
-                
+                nada: i('Nada').int
             }
         })
 
-    }
-})
+    },
 
-type S = typeof S;
-export interface $ShinyThing extends S {}
-type ShinyThing = Type<typeof S>;
-const ShinyThing = new Resource<ShinyThing, $ShinyThing>(S);
+    Hooks: [
+        // {
+        //     on: 'enter',
+        //     state: 'broken',
+        //     fn: async (obj: ShinyThingModel, client, run) => {
+
+        //     }
+        // }
+    ]
+}){}
+
+type ShinyThing = Type<$ShinyThing>;
+const ShinyThing = new $.Machine.Resource<ShinyThing, $ShinyThing>($ShinyThing.$);
 export default ShinyThing;

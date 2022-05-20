@@ -1,5 +1,5 @@
 import axios, { AxiosError } from "axios";
-import { Client } from "./Util/Auth";
+import { Client } from "./Auth/Client";
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 
 export enum Status {

@@ -1,10 +1,10 @@
-import { Machine } from "../Resource";
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { Status } from "../Service";
-import { $, GraphLink } from "../Resource/Graph";
+import { GraphLink } from "../Resource/Graph";
 import { Prop } from "../Resource/Output";
 import BaseModel from "../Resource/Model";
 import { Schema } from "../Resource/Schema";
+import ResourceMachine from '../Resource/ResourceMachine';
 
 export function isEmpty(val: any): boolean {
     return (val == null || val.length == 0)
@@ -12,7 +12,7 @@ export function isEmpty(val: any): boolean {
 
 export class ResourceSchemaValidator {
 
-    static validate(resource: Machine<any,any>, $: Schema) {
+    static validate(resource: ResourceMachine<any,any>, $: Schema) {
 
         if (this.hasMonetaryProp($.Output))
             this.checkCoinColumn($.Model);
@@ -60,7 +60,7 @@ export class ResourceSchemaValidator {
                 throw Exception.NoCoinOnMonetaryTable();
     }
 
-    private static checkGraphLinkFKey<S extends Schema, R extends Machine<any,S>>(
+    private static checkGraphLinkFKey<S extends Schema, R extends ResourceMachine<any,S>>(
         resource: R, model: typeof BaseModel,
         link: GraphLink<R>
     ) {

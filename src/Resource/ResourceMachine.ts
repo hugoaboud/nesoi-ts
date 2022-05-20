@@ -1,9 +1,9 @@
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { Model } from ".";
 import { Status } from '../Service';
-import { Client } from "../Util/Auth";
+import { Client } from "../Auth/Client";
 import { CamelToSnakeCase } from "../Util/String";
-import { ResourceSchemaValidator } from "../Util/Validator";
+import { ResourceSchemaValidator } from "../Validator/ResourceSchemaValidator";
 import { GraphLink } from "./Graph";
 import { Input } from "./Input";
 import BaseModel from "./Model";
@@ -36,7 +36,25 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
         return CamelToSnakeCase(name);
     }
 
-    /* CRUD */
+    /* Read */
+
+    async readAll(client: Client): Promise<T[]> {
+        const objs = await this.readAllFromModel(client, this.$.Model);
+        return this.buildAll(client, objs);
+    }
+
+    async readOne(client: Client, id: number): Promise<T> {
+        const obj = await this.readOneFromModel(client, this.$.Model, id);
+        if (!obj) throw Exception.NotFound(id);
+        return this.build(client, obj);
+    }
+
+    async readOneGroup(client: Client, key: keyof Model<S>, id: number): Promise<T[]> {
+        const objs = await this.readOneGroupFromModel(client, this.$.Model, key as string, id);
+        return this.buildAll(client, objs);
+    }
+
+    /* Create */
 
     async create(
         client: Client,
@@ -46,7 +64,7 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
         const obj = new this.$.Model() as Model<S>;
         obj.state = 'void';
         if (extra) Object.assign(input, extra);
-        await this.run(client, 'create', obj, input);
+        await this.runFromModel(client, 'create', obj, input);
         return this.build(client, obj);
     }
 
@@ -65,20 +83,21 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
         return objs;
     }
 
-    async readAll(client: Client): Promise<T[]> {
-        const objs = await this.readAllFromModel(client, this.$.Model);
-        return this.buildAll(client, objs);
-    }
+    /**
+        Run a transition for a resource, by id
+     */
 
-    async readOne(client: Client, id: number): Promise<T> {
+    async run<
+        K extends keyof Omit<S['Transitions'],'create'>
+    >(
+        client: Client, 
+        transition: K,
+        id: number,
+        input: Input<S,K>
+    ): Promise<void> {
         const obj = await this.readOneFromModel(client, this.$.Model, id);
         if (!obj) throw Exception.NotFound(id);
-        return this.build(client, obj);
-    }
-
-    async readOneGroup(client: Client, key: keyof Model<S>, id: number): Promise<T[]> {
-        const objs = await this.readOneGroupFromModel(client, this.$.Model, key as string, id);
-        return this.buildAll(client, objs);
+        return this.runFromModel(client, transition, obj, input);
     }
 
     /* Build */

@@ -1,37 +1,38 @@
-import { Schema, Prop, InputPropBuilder, Transition, Type, Resource } from '../../src/Resource';
+import { $, Type } from '../../src/Resource';
 import ParticleModel from './ParticleModel';
 
-const _ = Prop<ParticleModel>()
-const $ = InputPropBuilder
-const S = Schema({
+const i = $.InputProp
+const o = $.Prop<ParticleModel>()
+
+class $Particle extends $.Schema({
 
     Model: ParticleModel,
 
     Output: {
-        color: _('color').int
+        color: o('color').int
     },
 
     States: {
-        created:  { alias: 'Criado' },
-        purged:   { alias: 'Expurgado' },
-        deleted:  { alias: 'Excluído' }
+        created: 'Criado',
+        purged:  'Expurgado',
+        deleted: 'Excluído'
     },
 
     Transitions: {
 
-        create: Transition({
+        create: $.Transition({
             alias: 'Criar',
             from: 'void',
             to: 'created',
             input: {
-                color:      $('Cor').int
+                color: i('Cor').int
             },
             fn: async (obj: ParticleModel, input) => {
                 obj.color = input.color;
             },
         }),
 
-        purge: Transition({
+        purge: $.Transition({
             alias: 'Quebrar',
             from: 'created',
             to: 'purged',
@@ -41,20 +42,18 @@ const S = Schema({
             }
         }),
 
-        delete: Transition({
+        delete: $.Transition({
             alias: 'Deletar',
             from: '*',
             to: 'deleted',
             input: {
-                color: $('Cor').string
+                color: i('Cor').string
             }
         })
 
     }
-})
+}){}
 
-type S = typeof S;
-export interface $Particle extends S {}
-type Particle = Type<typeof S>;
-const Particle = new Resource<Particle, $Particle>(S);
+type Particle = Type<$Particle>;
+const Particle = new $.Machine.Resource<Particle, $Particle>($Particle.$);
 export default Particle;

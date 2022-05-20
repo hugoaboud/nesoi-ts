@@ -1,17 +1,17 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Database from '@ioc:Adonis/Lucid/Database';
-import { Client, EndpointAuth } from './Util/Auth';
-import { Verb } from './Service';
+import { Auth } from '../Auth';
+import { Verb } from '../Service';
 import Route from '@ioc:Adonis/Core/Route'
-import { Resource } from './Resource';
+import { Client } from '../Auth/Client';
 
 export class Middleware {}
 
-interface ControllerEndpoint {
+export interface ControllerEndpoint {
     verb: Verb
     path: string
     version: string
-    auth: typeof EndpointAuth
+    auth: typeof Auth
     middlewares: string[]
 }
 
@@ -21,8 +21,8 @@ export abstract class BaseController {
 
     client!: Client
 
-    static $endpoints: Record<string, ControllerEndpoint> = {}
-    static $middlewares:(typeof Middleware)[] = []
+    static $endpoints: Record<string, ControllerEndpoint>
+    static $middlewares: (typeof Middleware)[]
 
     static routes() {
         Object.keys(this.$endpoints).forEach(key => {
@@ -46,11 +46,11 @@ export abstract class BaseController {
 
     }
 
-    async guard(ctx: HttpContextContract, managed_trx = true, fn: (ctx: HttpContextContract) => Promise<any>) {
+    async guard(ctx: HttpContextContract, trx = true, fn: (ctx: HttpContextContract) => Promise<any>) {
 
         this.client = (ctx as any).client;
         
-        if (!managed_trx) return fn.bind(this)(ctx);
+        if (!trx) return fn.bind(this)(ctx);
 
         return Database.transaction(async trx => {
             this.client.trx = trx;
@@ -64,7 +64,7 @@ export abstract class BaseController {
 /**
  * Decorates a Controller method as a route.
  */
- export function route(verb: Verb, path: string, auth:typeof EndpointAuth, db = true, version = 'v1') {
+ export function route(verb: Verb, path: string, auth:typeof Auth, trx = true, version = 'v1') {
     return function(target: any, key: string, descriptor: any) { 
         // Register route
         let controller = (target.constructor as typeof BaseController);
@@ -78,7 +78,7 @@ export abstract class BaseController {
         // Read client from ctx
         let fn = descriptor.value;
         descriptor.value = async function (this: any, ctx: HttpContextContract) {
-            return this.guard(ctx, fn, db);
+            return this.guard(ctx, trx, fn);
         }
     }
 }
@@ -99,57 +99,3 @@ export abstract class BaseController {
  * - /route/1.json -> 1
  */
 export const IdMatcher = { match: /^\d+(.json)?$/, cast: (id: string) => Number(id.replace('.json','')) };
-
-/**
- * Resource Controller
- */
-
-export function ResourceController<T>(
-    resource: Resource<T,any>,
-    base: string,
-    auth: typeof EndpointAuth,
-    version = 'v1'
-) {
-
-    return class extends BaseController {
-        
-        static route = base
-
-        async readAll(ctx: HttpContextContract) {
-            return this.guard(ctx, true, () => 
-                resource.readAll(this.client));
-        }
-
-        async readOne(ctx: HttpContextContract) {
-            return this.guard(ctx, true, () => 
-                resource.readOne(this.client, ctx.params.id));
-        }
-
-        async create(ctx: HttpContextContract) {
-            return this.guard(ctx, true, () => 
-                resource.create(this.client, ctx.request.body()));
-        }
-        
-        static routes() {
-            let path = '/' + this.route;
-
-            this.$endpoints['readAll'] = {
-                verb: 'get', path: path,
-                auth, version, middlewares: []
-            }
-
-            this.$endpoints['readOne'] = {
-                verb: 'get', path: path+'/:id',
-                auth, version, middlewares: []
-            }
-
-            this.$endpoints['create'] = {
-                verb: 'post', path,
-                auth, version, middlewares: []
-            }
-
-            super.routes();
-        }
-
-    }
-}

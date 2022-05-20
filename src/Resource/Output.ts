@@ -1,5 +1,5 @@
 import { Type } from "."
-import { Client } from "../Util/Auth"
+import { Client } from "../Auth/Client"
 import ResourceMachine from "./ResourceMachine"
 
 type PropType = 'boolean'|'int'|'decimal'|'string'|'money'|'child'|'children'|'serviceChild'|'serviceChildren'

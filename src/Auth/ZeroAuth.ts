@@ -1,6 +1,7 @@
-import { Client, EndpointAuth, User } from "./Auth";
+import { Auth } from ".";
+import { Client, User } from "./Client";
 
-export default class ZeroAuth extends EndpointAuth {
+export default class ZeroAuth extends Auth {
     
     async auth(): Promise<Client> {
         return new Promise(resolve => {

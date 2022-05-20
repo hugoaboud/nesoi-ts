@@ -1,5 +1,5 @@
 import * as R from ".";
-import { Client } from "../Util/Auth";
+import { Client } from "../Auth/Client";
 import { Verb } from "../Service";
 import Service from "../Service"
 import { OutputSchema } from "./Schema";

@@ -5,6 +5,6 @@ export default class ParticleModel extends BaseModel {
 	public static table = 'particles'
 
 	@column()
-	public color: number
+	public color!: number
 
 }
