@@ -71,7 +71,7 @@ export abstract class BaseController {
         let controller = (target.constructor as typeof BaseController);
         controller.$endpoints[key] = {
             verb,
-            path: controller.route+path,
+            path: controller.route+'/'+path,
             version,
             auth,
             middlewares: []

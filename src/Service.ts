@@ -31,7 +31,7 @@ export default abstract class Service {
         body?: Record<string,any>
     ) {
 
-        return axios({
+        const response = await axios({
             method: verb,
             baseURL: this.base_url,
             url,
@@ -47,12 +47,13 @@ export default abstract class Service {
                 throw Exception.AuthFailed(this.alias);
 
             if (verb === 'get' && e.response?.status === this.not_found_code)
-                return null;
+                return { data: null };
             
             throw Exception.RequestError(this.alias, e);
 
         })
 
+        return response.data;
     }
     
 }
@@ -66,6 +67,7 @@ class Exception extends BaseException {
     }
 
     static RequestError(service: string, error: AxiosError) {
+        console.error(error);
         return new this(`<${service}>: ${error}`, error.response?.status, this.code)
     }
 

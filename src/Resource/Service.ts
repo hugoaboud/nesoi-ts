@@ -1,8 +1,9 @@
-import * as R from ".";
 import { Client } from "../Auth/Client";
 import { Verb } from "../Service";
 import Service from "../Service"
 import { OutputSchema } from "./Schema";
+import ResourceMachine from "./ResourceMachine";
+import { PropType } from ".";
 
 /* Model */
 
@@ -34,27 +35,39 @@ export function Schema<Model extends BaseModel>() {
     >(schema: {
         Service: typeof Service
         Route: string
-        Format: (obj: Model) => T
+        Parse?: (obj: Model) => T
+        ParseIndex?: (obj: Record<string,any>) => T[]
         Output?: Output
         Transitions: Transitions
     }) => {
-        return {
-            Service: Service,
-            Route: schema.Route,
-            Format: schema.Format,
-            Output: schema.Output || {} as Output,
-            Transitions: schema.Transitions
+        return class Schema implements Schema {
+            Service!: typeof Service
+            Route!: string
+            Parse!: (obj: Model) => T
+            ParseIndex!: (obj: Record<string,any>) => T
+            Output!: Output
+            Transitions!: Transitions
+
+            static $ = {
+                Service: schema.Service,
+                Route: schema.Route,
+                Parse: schema.Parse || (obj => obj),
+                ParseIndex: schema.ParseIndex || (obj => obj.data),
+                Output: schema.Output || {},
+                Transitions: schema.Transitions
+            }
         };
     }
 }
+
 export type Schema = {
     Service: typeof Service
     Route: string
-    Format: (obj: any) => any
+    Parse:      (obj: any) => any
+    ParseIndex: (obj: any) => any
     Output: OutputSchema<any>
     Transitions: TransitionSchema
 }
-
 
 /**
     [Machine Type]
@@ -62,9 +75,10 @@ export type Schema = {
 */
 
 export type Type<S extends Schema> = 
-    ReturnType<S['Format']> &
-    { [k in keyof S['Output']]: R.PropType<S['Output'][k]> } &
+    ReturnType<NonNullable<S['Parse']>> &
+    { [k in keyof S['Output']]: PropType<S['Output'][k]> } &
     Omit<{ [k in keyof S['Transitions']]: (input: TransitionInput<S['Transitions'][k]>) => Promise<void> }, 'create'>
+    {}
 
 /**
     [Service Machine]
@@ -73,11 +87,12 @@ export type Type<S extends Schema> =
 
 export type Input<S extends Schema,T extends keyof S['Transitions']> = TransitionInput<S['Transitions'][T]>
 
-export class Machine<T, S extends Schema> extends R.Machine<T,{
+export class Machine<T, S extends Schema> extends ResourceMachine<T,{
     Model: any
     Output: S['Output']
     States: any
-    Transitions: Record<string, any>
+    Transitions: any
+    Hooks: any
 }> {
 
     constructor($: Schema) {
@@ -119,7 +134,7 @@ export class Machine<T, S extends Schema> extends R.Machine<T,{
         schema: S['Output']|undefined = undefined,
         entity: Record<string, any> = {}
     ): Promise<T> {
-        if (!schema) entity = (this.$ as any as Schema).Format(obj);
+        if (!schema) entity = (this.$ as any as Schema).Parse(obj);
         return super.build(client, obj, schema, entity);
     }
 
@@ -140,7 +155,7 @@ export class Machine<T, S extends Schema> extends R.Machine<T,{
         _: never
     ) {
         const $ = (this.$ as any as Schema);
-        const url = $.Route + '/';
+        const url = $.Route;
         return $.Service.request(client, 'get', url) as any;
     }
 

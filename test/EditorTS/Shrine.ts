@@ -1,8 +1,9 @@
-import * as R from '../../src/Resource';
-import * as Service from '../../src/Resource/Service';
+import { $Service as $ } from '../../src/Resource';
 import WorldService from './WorldService';
 
-interface ShrineModel extends Service.BaseModel {
+const o = $.Prop<ShrineModel>()
+
+interface ShrineModel extends $.BaseModel {
     name: string
     place: {
         planet: string
@@ -11,28 +12,27 @@ interface ShrineModel extends Service.BaseModel {
     }
 }
 
-const _ = R.Prop<ShrineModel>()
-const S = Service.Schema<ShrineModel>()({
+class $Shrine extends $.Schema<ShrineModel>()({
 
     Service: WorldService,
     Route: 'shrines',
     
-    Format: obj => obj,
+    Parse: obj => obj,
 
     Output: {
-        extra: _('name').string
+        extra: o('name').string
     },
 
     Transitions: {
 
-        create: Service.Transition<{
+        create: $.Transition<{
             name: string
         }>({
             verb: 'post',
             url: '/'
         }),
 
-        travel: Service.Transition<{
+        travel: $.Transition<{
             planet: 'Mars' | 'Jupiter'
         }>({
             verb: 'post',
@@ -40,29 +40,9 @@ const S = Service.Schema<ShrineModel>()({
         })
 
     }
-})
+}){}
 
-type S = typeof S;
-export interface $Shrine extends S {}
-type Shrine = Service.Type<S>;
-const Shrine = new Service.Resource<Shrine, $Shrine>(S);
+type Shrine = $.Type<$Shrine>;
+const Shrine = new $.Machine<Shrine, $Shrine>($Shrine.$);
+
 export default Shrine;
-
-// async function main() {
-//     let a = await Shrine.create({} as any, {
-//         name: 'Moon Shrine'
-//     });
-//     let as = await Shrine.createMany({} as any,[{
-//         name: 'Moon Shrine'
-//     },{
-//         name: 'Jupiter Shrine'
-//     }])
-//     a.travel({
-//         planet: 'Jupiter'
-//     });
-
-//     a.travel({
-//         planet: 'Mars'
-//     })
-
-// }

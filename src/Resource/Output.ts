@@ -1,4 +1,4 @@
-import { Type } from "."
+import { $ as Resource } from "."
 import { Client } from "../Auth/Client"
 import ResourceMachine from "./ResourceMachine"
 
@@ -46,7 +46,7 @@ export function $<Model>() {
         }),
 
         child: <R extends ResourceMachine<any,any>>(resource: R) =>
-            new Prop<Model, Type<R['$']>>('child', source, prop, (obj: Model, client) => {
+            new Prop<Model, Resource.Type<R['$']>>('child', source, prop, (obj: Model, client) => {
                 return resource.readOne(client, obj[prop] as any)
             }, false, true)
 

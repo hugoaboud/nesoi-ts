@@ -3,6 +3,7 @@ import { $ as $InputProp, InputPropBuilder } from './Input';
 import { GraphLink, $ as $GraphLink } from './Graph';
 import { DateTime } from 'luxon'
 import { Schema as $Schema } from "./Schema";
+import * as Service from "./Service";
 import { Method, Transition as $Transition } from "./StateMachine";
 import ResourceMachine from "./ResourceMachine";
 
@@ -37,11 +38,10 @@ export type InputPropType<T> =
     T extends InputPropBuilder<infer X> ? X : never
 
 /**
-    [ Resource Type ]
-    Merges the given type properties with transition methods.
+    [ Resource Entity Type ]
 */
 
-export type Type<S extends $Schema> = 
+type $Type<S extends $Schema> = 
     { 
         id: number
         created_at: DateTime
@@ -60,8 +60,16 @@ export namespace $ {
     export const InputProp = $InputProp
     export const Transition = $Transition
     export const Schema = $Schema
-    export const Machine = {
-        Resource: ResourceMachine
-    }
+    export const Machine = ResourceMachine;
+    export type Type<S extends $Schema> = $Type<S>
+}
 
+export namespace $Service {
+    export const Prop = $Prop
+    export const GraphLink = $GraphLink
+    export type BaseModel = Service.BaseModel
+    export const Schema = Service.Schema
+    export const Transition = Service.Transition
+    export const Machine = Service.Machine;
+    export type Type<S extends Service.Schema> = Service.Type<S>
 }

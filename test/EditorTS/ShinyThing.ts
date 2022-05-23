@@ -1,4 +1,4 @@
-import { $, Type } from '../../src/Resource';
+import { $ } from '../../src/Resource';
 import ShinyThingModel from './ShinyThingModel';
 
 const i = $.InputProp
@@ -74,6 +74,6 @@ class $ShinyThing extends $.Schema({
     ]
 }){}
 
-type ShinyThing = Type<$ShinyThing>;
-const ShinyThing = new $.Machine.Resource<ShinyThing, $ShinyThing>($ShinyThing.$);
+type ShinyThing = $.Type<$ShinyThing>;
+const ShinyThing = new $.Machine<ShinyThing, $ShinyThing>($ShinyThing.$);
 export default ShinyThing;
