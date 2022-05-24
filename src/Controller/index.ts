@@ -13,6 +13,7 @@ export interface ControllerEndpoint {
     path: string
     version: string
     auth: typeof Auth
+    trx: boolean
     middlewares: string[]
 }
 
@@ -29,7 +30,15 @@ export abstract class BaseController {
         Object.keys(this.$endpoints).forEach(key => {
             
             let $route = this.$endpoints[key];
-            let route = Route[$route.verb]($route.path, this.name+'.'+key);
+            // let route = Route[$route.verb]($route.path, this.name+'.'+key);
+            let route = Route[$route.verb]($route.path, async ctx => {
+                const { default: Controller } = await import(
+                    process.cwd()+'/app/Controllers/Http/'+this.name
+                )
+                const controller = new Controller() as BaseController;
+                
+                return controller.guard(ctx, $route.trx, (controller as any)[key]);
+            });
 
             route.prefix($route.version)
             if ($route.auth) route.middleware($route.auth.name);
@@ -47,6 +56,7 @@ export abstract class BaseController {
 
     }
 
+    /** Setup client and transaction for the route */
     async guard(ctx: HttpContextContract, trx = true, fn: (ctx: HttpContextContract) => Promise<any>) {
 
         this.client = (ctx as any).client;
@@ -74,13 +84,14 @@ export abstract class BaseController {
             path: controller.route+'/'+path,
             version,
             auth,
+            trx,
             middlewares: []
         }
-        // Read client from ctx
-        let fn = descriptor.value;
-        descriptor.value = async function (this: any, ctx: HttpContextContract) {
-            return this.guard(ctx, trx, fn);
-        }
+        // // Read client from ctx
+        // let fn = descriptor.value;
+        // descriptor.value = async function (this: any, ctx: HttpContextContract) {
+        //     return this.guard(ctx, trx, fn);
+        // }
     }
 }
 

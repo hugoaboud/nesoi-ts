@@ -36,7 +36,6 @@ export function Schema<Model extends BaseModel>() {
         Service: typeof Service
         Route: string
         Parse?: (obj: Model) => T
-        ParseIndex?: (obj: Record<string,any>) => T[]
         Output?: Output
         Transitions: Transitions
     }) => {
@@ -44,7 +43,6 @@ export function Schema<Model extends BaseModel>() {
             Service!: typeof Service
             Route!: string
             Parse!: (obj: Model) => T
-            ParseIndex!: (obj: Record<string,any>) => T
             Output!: Output
             Transitions!: Transitions
 
@@ -52,7 +50,6 @@ export function Schema<Model extends BaseModel>() {
                 Service: schema.Service,
                 Route: schema.Route,
                 Parse: schema.Parse || (obj => obj),
-                ParseIndex: schema.ParseIndex || (obj => obj.data),
                 Output: schema.Output || {},
                 Transitions: schema.Transitions
             }
@@ -64,7 +61,6 @@ export type Schema = {
     Service: typeof Service
     Route: string
     Parse:      (obj: any) => any
-    ParseIndex: (obj: any) => any
     Output: OutputSchema<any>
     Transitions: TransitionSchema
 }

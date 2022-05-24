@@ -2,59 +2,81 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { Auth } from '../Auth';
 import ResourceMachine from '../Resource/ResourceMachine';
 import { BaseController, ControllerEndpoint, Middleware } from '.';
+import { Schema } from '../Resource/Schema';
+
+export type ControllerTransition<S extends Schema> = {
+    transition: keyof Omit<S['Transitions'],'create'>
+    auth?: typeof Auth
+}
 
 /**
  * Resource Controller
  */
 
-export function ResourceController<T>(
-    resource: ResourceMachine<T,any>,
+export function ResourceController<T,S extends Schema>(
+    resource: ResourceMachine<T,S>,
     base: string,
     auth: typeof Auth,
+    transitions: ControllerTransition<S>[] = [],
     version = 'v1'
 ) {
 
-    return class extends BaseController {
+    let c = class extends BaseController {
         
         static $endpoints: Record<string, ControllerEndpoint> = {}
         static $middlewares:(typeof Middleware)[] = []
         static route = base
 
-        async readAll(ctx: HttpContextContract) {
-            return this.guard(ctx, true, () => 
-                resource.readAll(this.client));
+        async readAll() {
+            return resource.readAll(this.client);
         }
 
         async readOne(ctx: HttpContextContract) {
-            return this.guard(ctx, true, () => 
-                resource.readOne(this.client, ctx.params.id));
+            return resource.readOne(this.client, ctx.params.id);
         }
 
         async create(ctx: HttpContextContract) {
-            return this.guard(ctx, true, () => 
-                resource.create(this.client, ctx.request.body()));
+            return resource.create(this.client, ctx.request.body() as any);
         }
-        
+                
         static routes() {
             let path = '/' + this.route;
 
             this.$endpoints['readAll'] = {
                 verb: 'get', path: path,
-                auth, version, middlewares: []
+                auth, trx: true, version, middlewares: []
             }
 
             this.$endpoints['readOne'] = {
                 verb: 'get', path: path+'/:id',
-                auth, version, middlewares: []
+                auth, trx: true, version, middlewares: []
             }
 
             this.$endpoints['create'] = {
                 verb: 'post', path,
-                auth, version, middlewares: []
+                auth, trx: true, version, middlewares: []
             }
+
+            transitions.forEach(t => {
+                const t_name = t.transition as string;
+                const t_path = path+'/'+t.transition+'/:id';
+                const t_auth = t.auth || auth;
+                
+                this.$endpoints[t_name] = {
+                    verb: 'post', path: t_path,
+                    auth: t_auth, version, middlewares: []
+                } as any
+
+                (this.prototype as any)[t_name] = 
+                    async function (ctx: HttpContextContract) {
+                        return resource.run(this.client, t_name as any, ctx.request.param('id'), ctx.request.body() as any);
+                    }
+            })
 
             super.routes();
         }
 
     }
+
+    return c;
 }

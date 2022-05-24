@@ -17,7 +17,11 @@ class $Shrine extends $.Schema<ShrineModel>()({
     Service: WorldService,
     Route: 'shrines',
     
-    Parse: obj => obj,
+    Parse: obj => {
+        return {
+            planet: obj.place.planet
+        }
+    },
 
     Output: {
         extra: o('name').string
@@ -32,12 +36,12 @@ class $Shrine extends $.Schema<ShrineModel>()({
             url: '/'
         }),
 
-        travel: $.Transition<{
-            planet: 'Mars' | 'Jupiter'
-        }>({
-            verb: 'post',
-            url: '/travel'
-        })
+        // travel: $.Transition<{
+        //     planet: 'Mars' | 'Jupiter'
+        // }>({
+        //     verb: 'post',
+        //     url: '/travel'
+        // })
 
     }
 }){}
