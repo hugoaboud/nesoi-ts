@@ -1,3 +1,7 @@
-- ServiceResource
+- Update
+- Filter
+- Pagination
+- Jobs
+- Test auth from gateway
 - Validate foreign key on input
 - Validate foreign keys on input

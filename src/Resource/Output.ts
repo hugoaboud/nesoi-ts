@@ -1,8 +1,6 @@
-import { $ as Resource } from "."
 import { Client } from "../Auth/Client"
-import ResourceMachine from "./ResourceMachine"
 
-type PropType = 'boolean'|'int'|'decimal'|'string'|'money'|'child'|'children'|'serviceChild'|'serviceChildren'
+type PropType = 'boolean'|'int'|'decimal'|'string'|'money'
 type PropSource = 'model'|'entity'
 
 /**
@@ -18,7 +16,7 @@ export class Prop<Model, T> {
         public prop: keyof Model,
         public fn: (obj: Model, client: Client) => any,
         public list?: boolean,
-        public async = false
+        public async = false,
     ) {}
 }
 
@@ -43,12 +41,7 @@ export function $<Model>() {
         }),
         money: new Prop<Model, string>('money', source, prop, (obj: Model) => {
             return (obj as any).coin + obj[prop]
-        }),
-
-        child: <R extends ResourceMachine<any,any>>(resource: R) =>
-            new Prop<Model, Resource.Type<R['$']>>('child', source, prop, (obj: Model, client) => {
-                return resource.readOne(client, obj[prop] as any)
-            }, false, true)
+        })
 
     })
 }

@@ -10,6 +10,7 @@ import BaseModel from "./Model";
 import { Prop, $ as $Prop } from "./Output";
 import { Schema } from "./Schema";
 import { StateMachine } from './StateMachine';
+import { Query } from './Helpers/Filter';
 
 /**
     [ Resource Machine ]
@@ -52,6 +53,12 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
     async readOneGroup(client: Client, key: keyof Model<S>, id: number): Promise<T[]> {
         const objs = await this.readOneGroupFromModel(client, this.$.Model, key as string, id);
         return this.buildAll(client, objs);
+    }
+
+    /* Filter */
+
+    query(client: Client, q?: Record<string,any>): Query {
+        return new Query(client, this, q);
     }
 
     /* Create */
