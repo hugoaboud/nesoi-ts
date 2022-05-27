@@ -5,6 +5,7 @@ import { OutputSchema } from "./Schema";
 import ResourceMachine from "./ResourceMachine";
 import { PropType } from ".";
 import { QueryBuilder } from "./Helpers/Query";
+import { Settings } from "../Settings";
 
 /* Model */
 
@@ -112,7 +113,10 @@ export class Machine<T, S extends Schema> extends ResourceMachine<T,{
     }
 
     protected async runQuery(client: Client, query: QueryBuilder): Promise<T[]> {
-        return (query as any).toRansack();
+        const $ = (this.$ as any as Schema);
+        const q = (query as any).toRansack();
+        const url = $.Route + Settings.QUERY_ROUTE;
+        return $.Service.request(client, 'post', url, undefined, { q });
     }
 
     /* CRUD */

@@ -23,8 +23,8 @@ export abstract class BaseController {
 
     client!: Client
 
-    static $endpoints: Record<string, ControllerEndpoint>
-    static $middlewares: (typeof Middleware)[]
+    static $endpoints: Record<string, ControllerEndpoint> = {}
+    static $middlewares: (typeof Middleware)[] = []
 
     static routes() {
         Object.keys(this.$endpoints).forEach(key => {
