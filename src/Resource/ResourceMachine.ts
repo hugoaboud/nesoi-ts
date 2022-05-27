@@ -10,7 +10,7 @@ import BaseModel from "./Model";
 import { Prop, $ as $Prop } from "./Output";
 import { Schema } from "./Schema";
 import { StateMachine } from './StateMachine';
-import { Query } from './Helpers/Filter';
+import { QueryBuilder } from './Helpers/Query';
 
 /**
     [ Resource Machine ]
@@ -55,10 +55,14 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
         return this.buildAll(client, objs);
     }
 
-    /* Filter */
+    /* Query */
 
-    query(client: Client, q?: Record<string,any>): Query {
-        return new Query(client, this, q);
+    query(client: Client): QueryBuilder {
+        return new QueryBuilder(client, this);
+    }
+
+    protected async runQuery(client: Client, query: QueryBuilder): Promise<T[]> {
+        return [];
     }
 
     /* Create */

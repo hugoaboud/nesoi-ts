@@ -4,6 +4,7 @@ import Service from "../Service"
 import { OutputSchema } from "./Schema";
 import ResourceMachine from "./ResourceMachine";
 import { PropType } from ".";
+import { QueryBuilder } from "./Helpers/Query";
 
 /* Model */
 
@@ -102,6 +103,16 @@ export class Machine<T, S extends Schema> extends ResourceMachine<T,{
         const route = (this.$ as any as Schema).Route;
         if (snake_case) return route;
         return route;
+    }
+
+    /* Query */
+
+    query(client: Client): QueryBuilder {
+        return new QueryBuilder(client, this, true);
+    }
+
+    protected async runQuery(client: Client, query: QueryBuilder): Promise<T[]> {
+        return (query as any).toRansack();
     }
 
     /* CRUD */

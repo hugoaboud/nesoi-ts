@@ -3,15 +3,17 @@ import ResourceMachine from "../ResourceMachine";
 import { Status } from '../../Service';
 import { GraphLink } from '../Graph';
 import { Client } from '../../Auth/Client';
+import { ReverseEnum } from '../../Util/Enum';
 
 type Operator = 'like'|'='|'>='|'<='|'in'
-enum OperatorQ {
+enum OpRansackToRule {
     cont = 'like',
     eq = '=',
     gteq = '>=',
     lteq = '<=',
     in = 'in'
 }
+const OpRuleToRansack = ReverseEnum(OpRansackToRule);
 
 interface Sort {
     param: string,
@@ -27,7 +29,7 @@ interface Param {
 
 type Rule = Param[]
 
-export class Query {
+export class QueryBuilder {
 
     protected rules: Rule[] = []
     protected sort?: Sort
@@ -36,14 +38,11 @@ export class Query {
     constructor(
         protected client: Client,
         protected res: ResourceMachine<any,any>,
-        q?: Record<string,any>
-    ) {
-        if (q) this.fromQ(q);
-    }
+        protected service = false
+    ) {}
     
-    rule(rule_params: string | string[], op: Operator, value: string|number): Query {
+    rule(rule_params: string | string[], op: Operator, value: string|number): QueryBuilder {
         
-        if (!rule_params) Exception.MalformedQuery();
         if (!Array.isArray(rule_params)) rule_params = [rule_params];
 
         const rule = rule_params.map(param =>
@@ -54,14 +53,14 @@ export class Query {
         return this;
     }
     
-    sortedBy(param: string, dir: 'asc'|'desc' = 'asc'): Query {
+    sortedBy(param: string, dir: 'asc'|'desc' = 'asc'): QueryBuilder {
         this.sort = {
             param, dir
         };
         return this;
     }
     
-    expectFormat(format: Record<string,any>): Query {
+    expectFormat(format: Record<string,any>): QueryBuilder {
         this.out = format;
         return this;
     }
@@ -73,13 +72,22 @@ export class Query {
         value: string|number,
         path?: ResourceMachine<any,any>[]
     ): Param {
+        if (this.service) {
+            return {
+                path: [],
+                param: param_path,
+                op,
+                value
+            }
+        }
         let param = param_path;
         while (param) {
-            const prop = (res as any)[param];
+            const prop = res.$.Output[param];
             if (prop) {
                 if (prop instanceof GraphLink) {
                     const child_res = prop.resource;
-                    const child_param = param.slice(param.length+1);
+                    const child_param = param_path.slice(param.length+1);
+                    if (!child_param.length) throw Exception.InvalidParam(param_path);
                     const child_path = [child_res].concat(path || []);
                     return this.parseParam(child_res, child_param, op, value, child_path);
                 }
@@ -97,31 +105,43 @@ export class Query {
         throw Exception.InvalidParam(param_path);
     }
 
-    private fromQ(q: Record<string,string>): void {
-        for (let q_rule in q) {
-            if (q_rule === 's') continue;
-            const [_,q_params,op] = q_rule.match(/(.*)_(.*)/) || [];
-            if (!OperatorQ[op as never]) Exception.UnknownOperator(op);
-            this.rule(
-                q_params.split('_or_'),
-                OperatorQ[op as never],
-                q[q_rule]
+    /** From/To ransack syntax */
+
+    static fromRansack(
+        client: Client,
+        res: ResourceMachine<any,any>,
+        q: Record<string,any>
+    ): QueryBuilder {
+        if (!q) throw Exception.QNotFound();
+        const query = new QueryBuilder(client, res);
+        for (let rule in q) {
+            if (rule === 's') continue;
+            const [_,params,op] = rule.match(/(.*)_(.*)/) || [];
+            if (!params) throw Exception.MalformedQuery();
+            if (!OpRansackToRule[op as never]) throw Exception.UnknownOperator(op);
+            query.rule(
+                params.split('_or_'),
+                OpRansackToRule[op as never],
+                q[rule]
             );
         }
+        return query;
     }
 
-    public toQ(): Record<string,any> {
+    private toRansack(): Record<string,any> {
         const q: Record<string,any> = {};
 
         this.rules.forEach(rule => {
-
             const params = rule.map(p => p.param).join('_or_');
-            const op = OperatorQ[rule[0].op as never];
-
+            const op = OpRuleToRansack[rule[0].op as never];
             q[params + '_' + op] = rule[0].value;
         })
 
         return q;
+    }
+
+    public async run() {
+        return (this.res as any).runQuery(this.client, this);
     }
 
 
@@ -285,42 +305,42 @@ export class Filter {
 
 class Exception extends BaseException {
 
-        static code = 'E_FILTER_EXCEPTION'
+        static code = 'E_QUERY_EXCEPTION'
     
-        // static QNotFound() {
-        //     throw new this(`Parâmetro 'q' não encontrado no corpo da requisição`, Status.BADREQUEST, this.code)
-        // }
+        static QNotFound() {
+            return new this(`Parâmetro 'q' não encontrado no corpo da requisição`, Status.BADREQUEST, this.code)
+        }
     
         static MalformedQuery() {
-            throw new this(`Query mal formatada`, Status.BADREQUEST, this.code)
+            return new this(`Query mal formatada`, Status.BADREQUEST, this.code)
         }
     
         // static InOperatorWithoutArray(param: string) {
-        //     throw new this(`Operador 'in' deve receber um array como valor. Parâmetro: ${param}`, Status.BADREQUEST, this.code)
+        //     return new this(`Operador 'in' deve receber um array como valor. Parâmetro: ${param}`, Status.BADREQUEST, this.code)
         // }
     
         static UnknownOperator(method: string) {
-            throw new this(`Operador desconhecido: ${method}`, Status.BADREQUEST, this.code)
+            return new this(`Operador desconhecido: ${method}`, Status.BADREQUEST, this.code)
         }
     
         static InvalidParam(param: string) {
-            throw new this(`Parâmetro inválido: ${param}`, Status.BADREQUEST, this.code)
+            return new this(`Parâmetro inválido: ${param}`, Status.BADREQUEST, this.code)
         }
     
         // static InvalidDynamicParam(param: string) {
-        //     throw new this(`Parâmetro dinâmico não pode ser utilizado como filtro: ${param}`, Status.BADREQUEST, this.code)
+        //     return new this(`Parâmetro dinâmico não pode ser utilizado como filtro: ${param}`, Status.BADREQUEST, this.code)
         // }
     
         // static InvalidEnumValue(value: any, param: string) {
-        //     throw new this(`Valor '${value}' inválido para o parâmetro: ${param}`, Status.BADREQUEST, this.code)
+        //     return new this(`Valor '${value}' inválido para o parâmetro: ${param}`, Status.BADREQUEST, this.code)
         // }
     
         // static InvalidListOperator(op: any, param: string) {
-        //     throw new this(`Operador '${op}' inválido para o parâmetro: ${param}`, Status.BADREQUEST, this.code)
+        //     return new this(`Operador '${op}' inválido para o parâmetro: ${param}`, Status.BADREQUEST, this.code)
         // }
     
         // static ColumnNotFound(column: string) {
-        //     throw new this(`Coluna não encontrada: ${column}`, Status.BADREQUEST, this.code)
+        //     return new this(`Coluna não encontrada: ${column}`, Status.BADREQUEST, this.code)
         // }
     
         // static LucidError(e: any) {
@@ -330,7 +350,7 @@ class Exception extends BaseException {
         //         this.ColumnNotFound(column?column[1]:'');
         //     }
     
-        //     throw new this(`Lucid Error: ${e}`, Status.BADREQUEST, this.code)
+        //     return new this(`Lucid Error: ${e}`, Status.BADREQUEST, this.code)
         // }
     
         // static NotImplemented() {
@@ -338,11 +358,11 @@ class Exception extends BaseException {
         // }
     
         // static InvalidSortParam(param: string) {
-        //     throw new this(`Parâmetro de ordenação inválido: ${param}`, Status.BADREQUEST, this.code)
+        //     return new this(`Parâmetro de ordenação inválido: ${param}`, Status.BADREQUEST, this.code)
         // }
     
         // static InvalidSortDirection(dir: string) {
-        //     throw new this(`Direção de ordenação inválida: ${dir}`, Status.BADREQUEST, this.code)
+        //     return new this(`Direção de ordenação inválida: ${dir}`, Status.BADREQUEST, this.code)
         // }
     
     }

@@ -3,6 +3,8 @@ import { Auth } from '../Auth';
 import ResourceMachine from '../Resource/ResourceMachine';
 import { BaseController, ControllerEndpoint, Middleware } from '.';
 import { Schema } from '../Resource/Schema';
+import { Settings } from '../Settings';
+import { QueryBuilder } from '../Resource/Helpers/Query';
 
 export type ControllerTransition<S extends Schema> = {
     transition: keyof Omit<S['Transitions'],'create'>
@@ -38,6 +40,11 @@ export function ResourceController<T,S extends Schema>(
         async create(ctx: HttpContextContract) {
             return resource.create(this.client, ctx.request.body() as any);
         }
+
+        async query(ctx: HttpContextContract) {
+            const body = ctx.request.body();
+            return QueryBuilder.fromRansack(this.client, resource, body.q).run();
+        }
                 
         static routes() {
             let path = '/' + this.route;
@@ -54,6 +61,11 @@ export function ResourceController<T,S extends Schema>(
 
             this.$endpoints['create'] = {
                 verb: 'post', path,
+                auth, trx: true, version, middlewares: []
+            }
+
+            this.$endpoints['query'] = {
+                verb: 'post', path: path + Settings.QUERY_ROUTE,
                 auth, trx: true, version, middlewares: []
             }
 

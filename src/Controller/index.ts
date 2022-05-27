@@ -32,9 +32,8 @@ export abstract class BaseController {
             let $route = this.$endpoints[key];
             // let route = Route[$route.verb]($route.path, this.name+'.'+key);
             let route = Route[$route.verb]($route.path, async ctx => {
-                const { default: Controller } = await import(
-                    process.cwd()+'/app/Controllers/Http/'+this.name
-                )
+                const path = process.cwd()+'/app/Controllers/Http/'+this.name;
+                const { default: Controller } = await import(path);
                 const controller = new Controller() as BaseController;
                 
                 return controller.guard(ctx, $route.trx, (controller as any)[key]);
@@ -76,7 +75,7 @@ export abstract class BaseController {
  * Decorates a Controller method as a route.
  */
  export function route(verb: Verb, path: string, auth:typeof Auth, trx = true, version = 'v1') {
-    return function(target: any, key: string, descriptor: any) { 
+    return function(target: any, key: string) { 
         // Register route
         let controller = (target.constructor as typeof BaseController);
         controller.$endpoints[key] = {
