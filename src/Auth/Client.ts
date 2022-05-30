@@ -14,9 +14,9 @@ export interface ClientAction<S extends Schema, R extends ResourceMachine<any,S>
 export class Client {
     public trx!: TransactionClientContract
     public stack: ClientAction<any,any>[] = []
-    public tokens: Record<string,string> = {}
     constructor(
-        public user: User
+        public user: User,
+        public tokens: Record<string,string> = {}
     ) {}
 
     pushAction<S extends Schema, R extends ResourceMachine<any,S>>(resource: R, transition: keyof R['$']['Transitions']) {

@@ -23,6 +23,9 @@ export default abstract class Service {
     /** HTTP code for "Not Found" when reading by id. */
     static not_found_code: number = Status.BADREQUEST;
 
+    /** Suffix to append at the end of every url (used for old content negotiation strategies). */
+    static suffix: string = '';
+
     static async request(
         client: Client,
         verb: Verb,
@@ -34,7 +37,7 @@ export default abstract class Service {
         const response = await axios({
             method: verb,
             baseURL: this.base_url,
-            url,
+            url: url + this.suffix,
             headers: {
                 ...client.tokens,
                 'Content-Type': 'application/json'

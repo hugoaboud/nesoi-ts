@@ -128,7 +128,7 @@ export class QueryBuilder {
         return query;
     }
 
-    private toRansack(): Record<string,any> {
+    protected toRansack(): Record<string,any> {
         const q: Record<string,any> = {};
 
         this.rules.forEach(rule => {
