@@ -40,28 +40,34 @@ export abstract class InputValidator {
             child: 'object',
             children: 'array'
         }[prop.type];
-        let validator = (schema as any)[type];
         
-        let rule = []
-        if (prop.required !== true || prop.scope !== 'public')
-            validator = validator.optional;
+        let validator = prop.list ? schema.array : (schema as any)[type];
+
+        let requiredWhen = []
         if (typeof prop.required === 'object')
-            rule.push(rules.requiredWhen(prop.required.param, 'in', [prop.required.value]))
+            requiredWhen.push(rules.requiredWhen(prop.required.param, 'in', [prop.required.value]))
         if (prop.required) {
             if (prop.scope === 'protected')
-                rule.push(rules.requiredWhen('__scope__', 'in', ['protected','private']))
+                requiredWhen.push(rules.requiredWhen('__scope__', 'in', ['protected','private']))
             else if (prop.scope === 'private')
-                rule.push(rules.requiredWhen('__scope__', 'in', ['private']))
+                requiredWhen.push(rules.requiredWhen('__scope__', 'in', ['private']))
         }
     
-        if (rule.length) {
-            if (type === 'enum') return validator(prop.options, rule);
-            if (type === 'date') return validator(undefined, rule);
-            return validator(rule);
+        if (prop.required === false || requiredWhen.length) {
+            if (type === 'enum') validator = validator.optional(prop.options, requiredWhen);
+            if (type === 'date') validator = validator.optional(undefined, requiredWhen);
+            validator = validator.optional(requiredWhen);
         }
-        
-        if (prop.type === 'enum') return validator(prop.options);
-        return validator();
+        else {
+            if (prop.type === 'enum') validator = validator(prop.options);
+            else validator = validator();
+        }
+
+        if (prop.list && prop.type !== 'children') {
+            validator = validator.members((schema as any)[type]())
+        }
+
+        return validator;
     }
 
 }
