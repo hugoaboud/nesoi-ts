@@ -193,6 +193,7 @@ export abstract class StateMachine< S extends Schema > {
         schema: InputSchema,
         input: Record<string,any>
     ): void {
+        console.log(scope, schema, input);
         Object.keys(schema).map(key => {
             const prop = schema[key] as any as InputProp<any>;
             if (prop.scope === 'public' ||
@@ -275,8 +276,8 @@ export abstract class StateMachine< S extends Schema > {
                 return;
             }
 
-            if (isEmpty(input[key]) && !isEmpty(prop.default))
-                input[key] = prop.default;
+            if (isEmpty(input[key]) && !isEmpty(prop.default_value))
+                input[key] = prop.default_value;
             if (prop.members)
                 this.assignDefaults(prop.members, input[key] || {});
         })        
