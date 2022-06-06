@@ -11,6 +11,8 @@ import { Prop, $ as $Prop } from "./Output";
 import { Schema } from "./Schema";
 import { StateMachine } from './StateMachine';
 import { Query, QueryBuilder } from './Helpers/Query';
+import { ColumnBasedMultiTenancy, MultiTenancy } from './Helpers/MultiTenancy';
+import { Settings } from '../Settings';
 
 /**
     [ Resource Machine ]
@@ -19,16 +21,24 @@ import { Query, QueryBuilder } from './Helpers/Query';
 
 export default class ResourceMachine< T, S extends Schema > extends StateMachine<S>{
 
+    private multi_tenancy!: MultiTenancy
+
     constructor($: S) {
         super($);
         ResourceSchemaValidator.validate(this, $);
         if (($ as any).Service) return;
+
         this.$.Output = {
             id: $Prop<any>()('id').int,
             ...this.$.Output,
             created_at: $Prop<any>()('created_at').string,
             updated_at: $Prop<any>()('updated_at').string
         };
+
+        this.multi_tenancy = new ColumnBasedMultiTenancy(
+            Settings.MultiTenancy.COLUMN,
+            Settings.MultiTenancy.USER_KEY
+        );
     }
 
     name(snake_case = false): string {
@@ -62,7 +72,9 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
     }
 
     protected async runQuery(client: Client, query: QueryBuilder): Promise<T[]> {
-        const objs = await Query.run(client, query);
+        const objs = await Query.run(client, query, {
+            multi_tenancy: this.multi_tenancy
+        });
         return this.buildAll(client, objs as any);
     }
 
@@ -191,6 +203,7 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
     ) {
         let query = model.query();
         if (client.trx) query = query.useTransaction(client.trx);
+        query = this.multi_tenancy.decorateReadQuery(client, query);
         return query.where('id', id).first() as Model<S> | null;
     }
 
@@ -200,6 +213,7 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
     ) {
         let query = model.query();
         if (client.trx) query = query.useTransaction(client.trx);
+        query = this.multi_tenancy.decorateReadQuery(client, query);
         return await query as Model<S>[];
     }
 
@@ -211,7 +225,20 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
     ) {
         let query = model.query();
         if (client.trx) query = query.useTransaction(client.trx);
+        query = this.multi_tenancy.decorateReadQuery(client, query);
         return await query.where(key, id) as Model<S>[];
+    }
+
+    async save(
+        client: Client,
+        obj: Model<S>,
+        create: boolean
+    ) {
+        if (create)
+            obj = this.multi_tenancy.decorateObjectBeforeSave(client, obj);
+        obj.useTransaction(client.trx);
+        await obj.save();
+        await obj.refresh();
     }
 
 }

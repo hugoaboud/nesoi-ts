@@ -193,7 +193,6 @@ export abstract class StateMachine< S extends Schema > {
         schema: InputSchema,
         input: Record<string,any>
     ): void {
-        console.log(scope, schema, input);
         Object.keys(schema).map(key => {
             const prop = schema[key] as any as InputProp<any>;
             if (prop.scope === 'public' ||
@@ -363,7 +362,15 @@ export abstract class StateMachine< S extends Schema > {
             obj.created_at = DateTime.now();
             obj.created_by = client.user.id;
         }
-        await this.save(client, obj);
+        obj.updated_at = DateTime.now();
+        obj.updated_by = client.user.id;
+        if (obj.state === 'deleted') {
+            obj.deleted_at = DateTime.now();
+            obj.deleted_by = client.user.id;
+        }
+        await this.save(client, obj, t === 'create').catch(e => {
+            throw Exception.SaveFailed(e)
+        });
 
         if (trans.after) await trans.after(obj, input, client, from);
 
@@ -381,24 +388,11 @@ export abstract class StateMachine< S extends Schema > {
         client.popAction();
     }
 
-
-
-    private async save(
+    protected abstract save(
         client: Client,
-        obj: Model<S>
-    ) {
-        obj.updated_at = DateTime.now();
-        obj.updated_by = client.user.id;
-        if (obj.state === 'deleted') {
-            obj.deleted_at = DateTime.now();
-            obj.deleted_by = client.user.id;
-        }
-        obj.useTransaction(client.trx);
-        await obj.save().catch(e => {
-            throw Exception.SaveFailed(e)
-        })
-        await obj.refresh();
-    }
+        obj: Model<S>,
+        create: boolean
+    ): Promise<void>
 
 }
 
