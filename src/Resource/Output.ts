@@ -15,9 +15,14 @@ export class Prop<Model, T> {
         public source: PropSource,
         public prop: keyof Model,
         public fn: (obj: Model, client: Client) => any,
-        public list?: boolean,
+        public list: boolean = false,
         public async = false,
     ) {}
+
+    array() {
+        const prop = new Prop<Model, T[]>(this.type, this.source, this.prop, this.fn, true);
+        return prop;
+    }
 }
 
 /**
