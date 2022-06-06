@@ -31,11 +31,11 @@ class $ShinyThing extends $.Schema({
             to: 'created',
             input: {
                 name:           i('Nome').string.noDuplicate('code'),
-                price:          i('Preço').float.optional(0),
+                price:          i('Preço').float.default(0),
                 decoration:     i('Decoração').object({
                     color:      i('Cor').enum(['red','blue','green'] as const),
                     shininess:  i('Brilhância').float
-                }).optional({
+                }).default({
                     color: 'red',
                     shininess: 0.3
                 })

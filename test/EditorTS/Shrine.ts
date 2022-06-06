@@ -15,6 +15,7 @@ interface ShrineModel extends $.BaseModel {
 class $Shrine extends $.Schema<ShrineModel>()({
 
     Service: WorldService,
+    Version: 'v1',
     Route: 'shrines',
     
     Parse: obj => {

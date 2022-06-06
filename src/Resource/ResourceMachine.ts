@@ -61,7 +61,7 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
         return new QueryBuilder(client, this);
     }
 
-    protected async runQuery(client: Client, query: QueryBuilder): Promise<T[]> {
+    protected async runQuery(_client: Client, _query: QueryBuilder): Promise<T[]> {
         return [];
     }
 
