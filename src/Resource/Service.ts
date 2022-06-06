@@ -38,6 +38,7 @@ export function Schema<Model extends BaseModel>() {
         Service: typeof Service
         Version: string
         Route: string
+        Query?: Record<string,string>,
         Parse?: (obj: Model) => T
         Output?: Output
         Transitions: Transitions
@@ -46,6 +47,7 @@ export function Schema<Model extends BaseModel>() {
             Service!: typeof Service
             Version!: string
             Route!: string
+            Query!: Record<string,string>
             Parse!: (obj: Model) => T
             Output!: Output
             Transitions!: Transitions
@@ -55,6 +57,7 @@ export function Schema<Model extends BaseModel>() {
                 Version: schema.Version,
                 Route: schema.Route,
                 Parse: schema.Parse || (obj => obj),
+                Query: schema.Query || {},
                 Output: schema.Output || {},
                 Transitions: schema.Transitions
             }
@@ -66,6 +69,7 @@ export type Schema = {
     Service: typeof Service
     Version: string
     Route: string
+    Query: Record<string,string>
     Parse:      (obj: any) => any
     Output: OutputSchema<any>
     Transitions: TransitionSchema
@@ -125,7 +129,7 @@ export class Machine<T, S extends Schema> extends ResourceMachine<T,{
         const $ = (this.$ as any as Schema);
         const q = (query as any).toRansack();
         const url = this.route() + Settings.QUERY_ROUTE;
-        return $.Service.request(client, 'post', url, undefined, { q });
+        return $.Service.request(client, 'post', url, $.Query, { q });
     }
 
     /* CRUD */
@@ -167,7 +171,7 @@ export class Machine<T, S extends Schema> extends ResourceMachine<T,{
     ) {
         const $ = (this.$ as any as Schema);
         const url = this.route() + '/' + id;
-        return $.Service.request(client, 'get', url) as any;
+        return $.Service.request(client, 'get', url, $.Query) as any;
     }
 
     protected async readAllFromModel(
@@ -176,7 +180,7 @@ export class Machine<T, S extends Schema> extends ResourceMachine<T,{
     ) {
         const $ = (this.$ as any as Schema);
         const url = this.route();
-        return $.Service.request(client, 'get', url) as any;
+        return $.Service.request(client, 'get', url, $.Query) as any;
     }
 
 }
