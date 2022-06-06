@@ -198,7 +198,7 @@ export abstract class StateMachine< S extends Schema > {
             const prop = schema[key] as any as InputProp<any>;
             if (prop.scope === 'public' ||
                (prop.scope === 'protected' && scope !== 'public')) {
-                if (prop.members)
+                if (prop.members && (key in input))
                     this.filterInputScope(scope, prop.members, input[key]);
                 return;
             }
