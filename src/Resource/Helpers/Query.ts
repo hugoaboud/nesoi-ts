@@ -4,6 +4,7 @@ import { Status } from '../../Service';
 import { GraphLink } from '../Graph';
 import { Client } from '../../Auth/Client';
 import { ReverseEnum } from '../../Util/Enum';
+import BaseModel from '../Model';
 
 type Operator = 'like'|'='|'>='|'<='|'in'
 enum OpRansackToRule {
@@ -24,7 +25,7 @@ interface Param {
     path: ResourceMachine<any,any>[]
     param: string,
     op: Operator,
-    value: string|number
+    value: string|number|string[]|number[]
 }
 
 type Rule = Param[]
@@ -50,6 +51,11 @@ export class QueryBuilder {
         );
         this.rules.push(rule);
 
+        return this;
+    }
+
+    protected addRule(rule: Rule) {
+        this.rules.push(rule);
         return this;
     }
     
@@ -88,10 +94,10 @@ export class QueryBuilder {
                     const child_res = prop.resource;
                     const child_param = param_path.slice(param.length+1);
                     if (!child_param.length) throw Exception.InvalidParam(param_path);
-                    const child_path = [child_res].concat(path || []);
+                    const child_path = (path || []).concat([child_res]);
                     return this.parseParam(child_res, child_param, op, value, child_path);
                 }
-                // check enum, date, etc
+                // TODO: check types, enum, date, etc
                 return { 
                     path: path || [],
                     param: param,
@@ -147,159 +153,67 @@ export class QueryBuilder {
 
 }
 
-// export function Sort(rule?: string): Sort|undefined {
-//     if (!rule) return undefined;
-//     let split = rule.split(' ');
-//     if (split[1] !== 'asc' && split[1] !== 'desc') throw Exception.InvalidSortDirection(split[1]);
-//     return {
-//         param: split[0],
-//         dir: split[1]
-//     }
-// }
+export class Query {
 
-// export function FilterQuery(param: string, op: 'like' | '=' | '>=' | '<=' | 'in', value: any): IFilterQuery {
-//     return {
-//         rules: [{
-//             op: op as any,
-//             param,
-//             value
-//         }]
-//     }
-// }
+    public rules!: Rule[]
+    public sort?: Sort
+    public out?: Record<string,string>
+    public client!: Client
+    public res!: ResourceMachine<any,any>
+    public service!: boolean
 
-// export function FilterRawQuery(param: string, value: string) {
-//     return {
-//         rules: [{
-//             op: Operator.eq,
-//             param,
-//             value
-//         }],
-//         raw: true
-//     }
-// }
-
-
-
-export class Filter {
-
-
-    // /**
-    //  * Parses rules for a given Handler
-    //  * This transforms BaseRules into ServiceRules to be executed later.
-    //  */
-    //  static parseRules(handler: Handler<any,any>, queries: IFilterQuery[]): IFilterQuery[] {
+    static async run(client: Client, builder: QueryBuilder): Promise<BaseModel[]> {
         
-    //     let builder = {
-    //         id: 'id',
-    //         ...handler.group_keys?.reduce((a:any,x) => {a[x] = x; return a;}, {}),
-    //         ...new handler.builder(),
-    //     } as HandlerBuilder
+        let q = builder as any as Query;
+        let model = q.res.$.Model as (typeof BaseModel);
+        let query = model.query();
 
-    //     queries.map(query => {
-    //         query.rules = query.rules.map(rule => {
-    //             let param = rule.param;
-                
-    //             // Format incoming dates
-    //             if (param.endsWith('date'))
-    //                 rule.value = NormalizeISODate(rule.value as string, 'start')
+        if (client.trx) query.useTransaction(client.trx);
 
-    //             // If param matches exactly a raw param, it's a BaseRule
-    //             if (typeof builder[param] === 'string') return {
-    //                 ...rule,
-    //                 param: builder[param]
-    //             };
-                
-    //             // If param matches exactly a enum param, check value before returning a BaseRule
-    //             let enum_param = (builder[param] as IBuilderParam);
-    //             if (enum_param?.t_enum) {
-    //                 if (!enum_param.t_enum.includes(rule.value))
-    //                     throw Exception.InvalidEnumValue(rule.value, param);
-    //                 return {
-    //                     ...rule,
-    //                     param: builder[param]
-    //                 };
-    //             }
+        for (let r in q.rules) {
+            let rule = q.rules[r];
+            let qrule = [] as [string,string,any][];
+            for (let p in rule) {
+                let param = rule[p];
+                await this.walk(client, q.res, param);
+                // TODO: array columns
+                if (param.op === 'like') param.value = '%'+param.value+'%';
+                qrule.push([param.param, param.op, param.value]);
+            }
 
-                
-    //             // If param is a _date, try looking for a matching _datetime raw param
-    //             if (param.endsWith('date')) {
-    //                 if (typeof builder[param+'time'] === 'string') return {
-    //                     ...rule,
-    //                     param: builder[param+'time']
-    //                 };
-    //             }
-    //             // If param is a _datetime, try looking for a matching _date raw param
-    //             else if (param.endsWith('datetime')) {
-    //                 if (typeof builder[param.slice(0,-4)] === 'string') return {
-    //                     ...rule,
-    //                     param: builder[param.slice(0,-4)],
-    //                     value: NormalizeISODate(rule.value as string, 'start')
-    //                 };
-    //             }
+            query.where(query => {
+                qrule.forEach(rule => 
+                    query.orWhere(rule[0], rule[1], rule[2])
+                )
+            });
+        }
 
-    //             // Find root param
-    //             let terms = param.split('_');
-    //             let root:string|null = null;
-    //             for (let t in terms) {
-    //                 if (!root) root = terms[t];
-    //                 else root += '_'+terms[t];
-    //                 if (builder[root]) break;
-    //             }
-    //             if (root && !builder[root]) root = null;
+        return query as any;
+    }
 
-    //             // No root found = invalid parameter
-    //             if (!root) {
-    //                 if (typeof builder[param] === 'function') Exception.InvalidDynamicParam(param);
-    //                 throw Exception.InvalidParam(param);
-    //             }
-                
-    //             // Try to parse a ServiceRule
-    //             let service_param = (builder[root] as IBuilderParam);
-    //             if (service_param.service) {
-    //                 return {
-    //                     param: service_param.params[0],
-    //                     service: service_param.service,
-    //                     endpoint: service_param.endpoint,
-    //                     query: param.slice(root.length+1),
-    //                     op: rule.op,
-    //                     value: rule.value
-    //                 } as IServiceRule;
-    //             }                
-    //         }) as any;
-    //     })
-    
-    //     return queries;
+    private static async walk(client: Client, parent: ResourceMachine<any,any>, param: Param): Promise<void> {
+        
+        if (!param.path.length) return;
 
-    // }
+        const res = param.path.shift()!;
+        const builder = (res.query(client) as any).addRule([param]) as QueryBuilder;
+        const rows = await this.run(client, builder);
 
-    // /**
-    //  * Runs service rules and replace them on the filter queries
-    //  */
-    // static async runServiceRules(client: Client, queries: IFilterQuery[]): Promise<IFilterQuery[]> {
+        let fkey_child = res.name(true) + '_id';
 
-    //     return Promise.all(queries.map(async query => {
-
-    //         let rules = await Promise.all(
-    //             query.rules.map(async r =>{ 
-    //                 let rule = r as IServiceRule
-    //                 if (!rule.service) return rule;
-    //                 let results = await client.filter(rule.service, rule.endpoint, {queries: [FilterQuery(rule.query, rule.op, rule.value)]});
-    //                 if (!results.length) return null;
-                    
-    //                 return {
-    //                     param: rule.param,
-    //                     op: Operator.in,
-    //                     value: results.map(r => r.id)
-    //                 }
-    //             })
-    //         )
-
-    //         return {
-    //             rules: rules.filter(r => r) as Rule[]
-    //         }
-    //     }));
-
-    // }
+        // Parent stores reference to child id
+        if (parent.$.Model.$hasColumn(fkey_child)) {
+            param.param = fkey_child;
+            param.value = rows.map(row => row.id);
+        }
+        // Child stores reference to parent id
+        else {
+            let fkey_parent = parent.name(true) + '_id';
+            param.param = 'id';
+            param.value = rows.map(row => (row as any)[fkey_parent]);
+        }
+        param.op = 'in';
+    }
 
 }
 
@@ -325,6 +239,11 @@ class Exception extends BaseException {
     
         static InvalidParam(param: string) {
             return new this(`Parâmetro inválido: ${param}`, Status.BADREQUEST, this.code)
+        }
+
+        static Unknown(e: Error) {
+            console.log(e);
+            return new this(`Erro desconhecido`, Status.INTERNAL_SERVER, this.code)
         }
     
         // static InvalidDynamicParam(param: string) {

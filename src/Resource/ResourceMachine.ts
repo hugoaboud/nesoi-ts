@@ -10,7 +10,7 @@ import BaseModel from "./Model";
 import { Prop, $ as $Prop } from "./Output";
 import { Schema } from "./Schema";
 import { StateMachine } from './StateMachine';
-import { QueryBuilder } from './Helpers/Query';
+import { Query, QueryBuilder } from './Helpers/Query';
 
 /**
     [ Resource Machine ]
@@ -54,15 +54,16 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
         const objs = await this.readOneGroupFromModel(client, this.$.Model, key as string, id);
         return this.buildAll(client, objs);
     }
-
+    
     /* Query */
 
     query(client: Client): QueryBuilder {
         return new QueryBuilder(client, this);
     }
 
-    protected async runQuery(_client: Client, _query: QueryBuilder): Promise<T[]> {
-        return [];
+    protected async runQuery(client: Client, query: QueryBuilder): Promise<T[]> {
+        const objs = await Query.run(client, query);
+        return this.buildAll(client, objs as any);
     }
 
     /* Create */
