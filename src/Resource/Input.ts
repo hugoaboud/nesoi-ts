@@ -42,7 +42,7 @@ export type InputProp<T> = {
         param: string
         value: string | number | boolean
     }
-    default?: T
+    default_value?: T
     rules: InputRule<T>[]
     scope: InputScope
     alias: string
@@ -61,7 +61,7 @@ export class InputPropBuilder<T> {
     
     protected name!: string
     protected required?: boolean | InputRequiredWhen = true
-    protected default?: T
+    protected default_value?: T
     protected rules: InputRule<T>[] = []
     protected scope: InputScope = 'public';
 
@@ -74,11 +74,21 @@ export class InputPropBuilder<T> {
         protected child?: ResourceMachine<any,any>
     ) {}
 
+    
+    array() {
+        let prop = new InputPropBuilder<T[]>(this.alias, this.type, true, this.members, this.options);
+        return prop;
+    }
+
     /* Optional Fields */
 
-    optional(default_value?: T) {
+    default(default_value?: T) {
+        this.default_value = default_value;
+        this.required = false;
+        return this;        
+    }
+    optional() {
         let prop = new InputPropBuilder<T|undefined>(this.alias, this.type, this.list, this.members, this.options);
-        prop.default = default_value;
         prop.required = false;
         return prop;
     }
