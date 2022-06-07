@@ -1,5 +1,7 @@
 import { $ } from '../../src/Resource';
+import Particle from './Particle';
 import ShinyThingModel from './ShinyThingModel';
+import Shrine from './Shrine';
 
 const i = $.InputProp
 const o = $.Prop<ShinyThingModel>()
@@ -38,7 +40,10 @@ class $ShinyThing extends $.Schema({
                 }).default({
                     color: 'red',
                     shininess: 0.3
-                })
+                }),
+                shrine_id:      i('ID do Shrine').id(Shrine),
+                shrine:         i('Shrine').child(Shrine, 'create'),
+                particle_ids:   i('IDs das Partículas').id(Particle).array()
             },
             fn: async (obj: ShinyThingModel, input) => {
                 obj.name = input.name;
@@ -47,8 +52,13 @@ class $ShinyThing extends $.Schema({
                     'red': 1,
                     'blue': 2,
                     'green': 3
-                }[input.decoration!.color];
-                obj.shininess = input.decoration!.shininess;
+                }[input.decoration.color];
+                
+                input.$shrine.id
+                input.shrine.color
+                input.$particles[0].id
+
+                obj.shininess = input.decoration.shininess;
             },
         }),
 
@@ -68,7 +78,9 @@ class $ShinyThing extends $.Schema({
         //     on: 'enter',
         //     state: 'broken',
         //     fn: async (obj: ShinyThingModel, client, run) => {
+        //         run('create', {
 
+        //         })
         //     }
         // }
     ]

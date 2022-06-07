@@ -1,6 +1,8 @@
+import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { schema, rules, TypedSchema } from '@ioc:Adonis/Core/Validator'
 import { InputProp } from '../Resource/Input';
 import { InputSchema } from "../Resource/Schema";
+import { Status } from '../Service';
 
 /** 
     [Resource Input Validator]
@@ -13,10 +15,11 @@ export abstract class InputValidator {
         input = JSON.parse(JSON.stringify(input));
         Object.keys(input).forEach(k => {
             let prop = input[k] as any as InputProp<any>;
+            this.checkProp(k, input[k]);
             let validator = this.fromProp(input[k] as any) as any;
             if (prop.members) {
                 const members = this.fromSchema(prop.members);
-                if (prop.type === 'children')
+                if (prop.list)
                     validator = validator.members(schema.object().members(members))
                 else 
                     validator = validator.members(members);
@@ -24,6 +27,15 @@ export abstract class InputValidator {
             input[k] = validator;
         })
         return input as any;
+    }
+
+    private static checkProp(name: string, prop: InputProp<any>): void {
+        if (prop.type === 'id') {
+            if (!prop.list && !name.endsWith('_id'))
+                throw Exception.InvalidIDPropName(name);
+            else if (prop.list && !name.endsWith('_ids'))
+                throw Exception.InvalidIDsPropName(name);
+        }
     }
 
     private static fromProp(prop: InputProp<any>): Record<string,any> {
@@ -38,7 +50,7 @@ export abstract class InputValidator {
             datetime: 'date',
             object: 'object',
             child: 'object',
-            children: 'array'
+            id: 'number'
         }[prop.type];
         
         let validator = prop.list ? schema.array : (schema as any)[type];
@@ -63,11 +75,25 @@ export abstract class InputValidator {
             else validator = validator();
         }
 
-        if (prop.list && prop.type !== 'children') {
+        if (prop.list && prop.type !== 'child') {
             validator = validator.members((schema as any)[type]())
         }
 
         return validator;
+    }
+
+}
+
+class Exception extends BaseException {
+
+    static code = 'E_INPUT_VALIDATOR'
+
+    static InvalidIDPropName(name: string) {
+        return new this(`O nome da propriedade '${name}' do tipo id deve terminar com '_id'`, Status.INTERNAL_SERVER, this.code);
+    }
+
+    static InvalidIDsPropName(name: string) {
+        return new this(`O nome da propriedade '${name}' do tipo id[] deve terminar com '_ids'`, Status.INTERNAL_SERVER, this.code);
     }
 
 }

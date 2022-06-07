@@ -1,5 +1,5 @@
 import BaseModel from './Model'
-import { InputPropType } from '.'
+import { $ as $Resource, InputPropType } from '.'
 import { InputSchema, Schema } from './Schema'
 import { TransitionInput } from './StateMachine'
 import ResourceMachine from './ResourceMachine'
@@ -20,7 +20,7 @@ export type Input<
    Definition Types
 */
 
-type InputType = 'boolean'|'int'|'float'|'string'|'date'|'datetime'|'object'|'enum'|'child'|'children'
+type InputType = 'boolean'|'int'|'float'|'string'|'date'|'datetime'|'object'|'enum'|'child'|'id'
 type InputScope = 'public'|'protected'|'private'
 type InputRequiredWhen = {
     param: string
@@ -57,7 +57,7 @@ export type InputProp<T> = {
    [ Resource Input Prop Builder ]
    Build an Input Prop by chaining rules.
 */
-export class InputPropBuilder<T> {
+export class InputPropBuilder<T,L> {
     
     protected name!: string
     protected required?: boolean | InputRequiredWhen = true
@@ -76,7 +76,7 @@ export class InputPropBuilder<T> {
 
     
     array() {
-        let prop = new InputPropBuilder<T[]>(this.alias, this.type, true, this.members, this.options);
+        let prop = new InputPropBuilder<T[], L extends never ? never : L[]>(this.alias, this.type, true, this.members, this.options);
         return prop;
     }
 
@@ -88,12 +88,12 @@ export class InputPropBuilder<T> {
         return this;        
     }
     optional() {
-        let prop = new InputPropBuilder<T|undefined>(this.alias, this.type, this.list, this.members, this.options);
+        let prop = new InputPropBuilder<T|undefined, L extends never ? never : L|undefined>(this.alias, this.type, this.list, this.members, this.options);
         prop.required = false;
         return prop;
     }
     requiredIf(param: string, value: string|boolean|number = true) {
-        let prop = new InputPropBuilder<T|undefined>(this.alias, this.type, this.list, this.members, this.options);
+        let prop = new InputPropBuilder<T|undefined, L extends never ? never : L|undefined>(this.alias, this.type, this.list, this.members, this.options);
         prop.required = { param, value };
         return prop;
     }
@@ -178,44 +178,44 @@ export class InputPropBuilder<T> {
 
 export function $(alias: string) {
     return {
-        boolean: new InputPropBuilder<boolean>(
+        boolean: new InputPropBuilder<boolean, never>(
             alias, 'boolean'
         ),
-        int: new InputPropBuilder<number>(
+        int: new InputPropBuilder<number, never>(
             alias, 'int'
         ),
-        float: new InputPropBuilder<number>(
+        float: new InputPropBuilder<number, never>(
             alias, 'float'
         ),
-        string: new InputPropBuilder<string>(
+        string: new InputPropBuilder<string, never>(
             alias, 'string'
         ),
-        date: new InputPropBuilder<string>(
+        date: new InputPropBuilder<string, never>(
             alias, 'date'
         ),
-        datetime: new InputPropBuilder<string>(
+        datetime: new InputPropBuilder<string, never>(
             alias, 'datetime'
         ),
+        id: <R extends ResourceMachine<any,any>>
+            (resource: R) =>
+                new InputPropBuilder<number, $Resource.Type<R['$']>>(
+                    alias, 'id', false,
+                    undefined, undefined, resource
+                ),
         object: <T extends InputSchema>
             (members: T) =>
-                new InputPropBuilder<{[k in keyof T]: InputPropType<T[k]>}>(
+                new InputPropBuilder<{[k in keyof T]: InputPropType<T[k]>}, never>(
                     alias, 'object', false, members
                 ),
         enum: <T extends readonly string[]>
             (options: T) =>
-                new InputPropBuilder<T[number]>(
+                new InputPropBuilder<T[number], never>(
                     alias, 'enum', false, undefined, options
                 ),
         child: <R extends ResourceMachine<any,any>, T extends keyof R['$']['Transitions']>
             (resource: R, transition: T) =>
-                new InputPropBuilder<Input<R['$'],T>>(
+                new InputPropBuilder<Input<R['$'],T>, never>(
                     alias, 'child', false,
-                    resource.$.Transitions[transition].input, undefined, resource
-                ),
-        children: <R extends ResourceMachine<any,any>, T extends keyof R['$']['Transitions']>
-            (resource: R, transition: T) =>
-                new InputPropBuilder<Input<R['$'],T>[]>(
-                    alias, 'children', true,
                     resource.$.Transitions[transition].input, undefined, resource
                 )
     }

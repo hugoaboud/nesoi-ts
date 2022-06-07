@@ -1,5 +1,5 @@
 import { validator, schema, TypedSchema, ParsedTypedSchema } from '@ioc:Adonis/Core/Validator'
-import { InputProp } from "./Input"
+import { InputProp, InputPropBuilder } from "./Input"
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { DateTime } from 'luxon';
 import { InputPropType, Model } from ".";
@@ -107,6 +107,27 @@ export type HookCallback<
     Promise<Output>
 
 /**
+    [Input Links]
+    Used to read inputs linked to other resources
+ */
+
+
+type LinkInputProps<T> = {
+    [K in keyof T]: T[K] extends InputPropBuilder<any, infer Y> ? (Y extends never ? never : K ) : never
+}[keyof T]
+
+type NonLinkInputProps<T> = Omit<T, LinkInputProps<T>>
+
+type LinkInputPropType<T> = 
+    T extends InputPropBuilder<any, infer Y> ? Y : never
+
+type LinkName<S extends string> = S extends `${infer Head}_id` ? `$${Head}` : (
+    S extends `${infer Head}y_ids` ? `$${Head}ies` : (
+        S extends `${infer Head}_ids` ? `$${Head}s` : S
+    )
+);
+
+/**
     [Resource Transition Callback]
     A callback run by a transition.
  */
@@ -118,7 +139,9 @@ export type TransitionCallback<
 > = (
     obj: Model,
     input: {
-        [k in keyof Input]: InputPropType<Input[k]>
+        [k in keyof NonLinkInputProps<Input>]: InputPropType<Input[k]>
+    } & {
+        [k in LinkInputProps<Input> as LinkName<string & k>]: LinkInputPropType<Input[k]>
     },
     client: Client,
     from: string
@@ -290,10 +313,12 @@ export abstract class StateMachine< S extends Schema > {
         Object.keys(schema).map(key => {
             const prop = schema[key] as any as InputProp<any>;
             if (input[key]) {
-                if (prop.type === 'child')
-                    this.flagValidated(prop.members || {}, input[key]);
-                if (prop.type === 'children')
-                    input[key].forEach((i: any) => this.flagValidated(prop.members || {}, i))
+                if (prop.type === 'child') {
+                    if (!prop.list)
+                        this.flagValidated(prop.members || {}, input[key]);
+                    else
+                        input[key].forEach((i: any) => this.flagValidated(prop.members || {}, i))
+                }
             }
         })
     }

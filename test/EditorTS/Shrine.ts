@@ -3,7 +3,7 @@ import WorldService from './WorldService';
 
 const o = $.Prop<ShrineModel>()
 
-interface ShrineModel extends $.BaseModel {
+export interface ShrineModel extends $.BaseModel {
     name: string
     place: {
         planet: string
@@ -12,7 +12,7 @@ interface ShrineModel extends $.BaseModel {
     }
 }
 
-class $Shrine extends $.Schema<ShrineModel>()({
+export class $Shrine extends $.Schema<ShrineModel>()({
 
     Service: WorldService,
     Version: 'v1',

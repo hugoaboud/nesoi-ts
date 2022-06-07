@@ -35,7 +35,7 @@ export type GraphLinkType<T> =
 */
 
 export type InputPropType<T> =
-    T extends InputPropBuilder<infer X> ? X : never
+    T extends InputPropBuilder<infer X, any> ? X : never
 
 /**
     [ Resource Entity Type ]
