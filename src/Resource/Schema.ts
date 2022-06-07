@@ -70,6 +70,7 @@ export function Schema<
     Hooks extends HookSchema<Model, States, Transitions>
 >(schema: {
     Model: M
+    Alias: string
     Output: Output
     States: States
     Transitions: Transitions
@@ -78,6 +79,7 @@ export function Schema<
     //return schema;
     return class Schema implements Schema {
         Model!: M
+        Alias!: string
         Output!: Output
         States!: States
         Transitions!: Transitions
@@ -88,6 +90,7 @@ export function Schema<
 
 export type Schema = {
     Model: typeof BaseModel
+    Alias: string
     Output: OutputSchema<any>
     States: StateSchema
     Transitions: TransitionSchema<any,StateSchema>

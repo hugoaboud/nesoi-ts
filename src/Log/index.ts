@@ -91,7 +91,7 @@ export default function Log(scope: Scope, scope_id?: number, client?: Client) {
     let tag = 'resource' as const;
     if (scope instanceof ResourceMachine) tag = 'resource';
 
-    let scope_name = scope.constructor.name;
+    let scope_name = scope.name();
     
     return new Logger(tag, scope_name, scope_id, client?.user.id);
 }

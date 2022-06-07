@@ -3,6 +3,7 @@ import { BaseModel, column } from '@ioc:Adonis/Lucid/Orm'
 import { Level } from '../../Log'
 
 export default class LogModel extends BaseModel {
+  static table = 'logs';
 
   @column({ isPrimary: true })
   public id!: number

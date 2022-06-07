@@ -7,6 +7,7 @@ const o = $.Prop<ParticleModel>()
 export class $Particle extends $.Schema({
 
     Model: ParticleModel,
+    Alias: 'Partícula',
 
     Output: {
         color: o('color').int

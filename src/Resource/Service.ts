@@ -39,6 +39,7 @@ export function Schema<Model extends BaseModel>() {
         Service: typeof Service
         Version: string
         Name: string
+        Alias: string
         Route: string
         Query?: Record<string,string>,
         Parse?: (obj: Model) => T
@@ -49,6 +50,7 @@ export function Schema<Model extends BaseModel>() {
             Service!: typeof Service
             Version!: string
             Name!: string
+            Alias!: string
             Route!: string
             Query!: Record<string,string>
             Parse!: (obj: Model) => T
@@ -59,6 +61,7 @@ export function Schema<Model extends BaseModel>() {
                 Service: schema.Service,
                 Version: schema.Version,
                 Name: schema.Name,
+                Alias: schema.Alias,
                 Route: schema.Route,
                 Parse: schema.Parse || (obj => obj),
                 Query: schema.Query || {},
@@ -74,6 +77,7 @@ export type Schema = {
     Version: string
     Route: string
     Name: string
+    Alias: string
     Query: Record<string,string>
     Parse:      (obj: any) => any
     Output: OutputSchema<any>
@@ -100,6 +104,7 @@ export type Input<S extends Schema,T extends keyof S['Transitions']> = Transitio
 
 export class Machine<T, S extends Schema> extends ResourceMachine<T,{
     Model: any
+    Alias: string
     Output: S['Output']
     States: any
     Transitions: any

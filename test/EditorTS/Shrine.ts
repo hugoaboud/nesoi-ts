@@ -18,6 +18,7 @@ export class $Shrine extends $.Schema<ShrineModel>()({
     Version: 'v1',
     
     Name: 'Shrine',
+    Alias: 'Fonte',
     Route: 'shrines',
     
     Parse: obj => {

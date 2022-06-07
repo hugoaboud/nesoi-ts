@@ -9,6 +9,7 @@ import { InputSchema, Schema, TransitionSchema } from './Schema';
 import ResourceMachine from './ResourceMachine';
 import { InputValidator } from '../Validator/InputValidator';
 import { Status } from '../Service';
+import Log from '../Log';
 
 /* 
     [Resource State]
@@ -169,6 +170,12 @@ export abstract class StateMachine< S extends Schema > {
         })
     }
 
+    abstract name(snake_case?: boolean): string
+
+    alias() {
+        return this.$.Alias;
+    }
+    
     /* 
         Input Sanitization
         - Remove internal use '__keys__' 
@@ -418,6 +425,11 @@ export abstract class StateMachine< S extends Schema > {
         }
 
         client.popAction();
+        
+        const last = client.lastAction();
+        const origin = last ? last.resource.name() + '.' + (last.transition as string) : ''
+        await Log(this as any, obj.id, client)
+            .info(t as string, origin, `${trans.alias} ${this.alias()} id:${obj.id}`, input);
     }
 
     protected abstract save(

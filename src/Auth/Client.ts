@@ -26,4 +26,8 @@ export class Client {
     popAction() {
         return this.stack.pop();
     }
+
+    lastAction() {
+        return this.stack[this.stack.length-1];
+    }
 }

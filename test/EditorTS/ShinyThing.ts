@@ -9,6 +9,7 @@ const o = $.Prop<ShinyThingModel>()
 class $ShinyThing extends $.Schema({
 
     Model: ShinyThingModel,
+    Alias: 'Coisa Brilhante',
 
     Output: {
         name:           o('name').string,
