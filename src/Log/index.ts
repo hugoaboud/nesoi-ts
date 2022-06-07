@@ -1,6 +1,6 @@
-import { Client } from "./Auth/Client";
-import LogModel from "./Database/Models/LogModel";
-import ResourceMachine from "./Resource/ResourceMachine";
+import { Client } from "../Auth/Client";
+import LogModel from "../Database/Models/LogModel";
+import ResourceMachine from "../Resource/ResourceMachine";
 
 export type Level = 'debug' | 'info' | 'warn' | 'error'
 export type ReadBy = 'level' | 'event' | 'origin' | 'user_id'

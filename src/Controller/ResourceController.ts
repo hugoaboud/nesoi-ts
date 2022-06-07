@@ -1,10 +1,12 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { Auth } from '../Auth';
 import ResourceMachine from '../Resource/ResourceMachine';
-import { BaseController, ControllerEndpoint, Middleware } from '.';
+import { BaseController, ControllerEndpoint } from '.';
 import { Schema } from '../Resource/Schema';
 import { Settings } from '../Settings';
 import { QueryBuilder } from '../Resource/Helpers/Query';
+import LogMiddleware from '../Log/LogMiddleware';
+import { Middleware } from '../Middleware';
 
 export type ControllerTransition<S extends Schema> = {
     transition: keyof Omit<S['Transitions'],'create'|'delete'>
@@ -26,7 +28,7 @@ export function ResourceController<T,S extends Schema>(
     let c = class extends BaseController {
         
         static $endpoints: Record<string, ControllerEndpoint> = {}
-        static $middlewares:(typeof Middleware)[] = []
+        static $middlewares:(typeof Middleware)[] = [ LogMiddleware ]
         static route = base
 
         async readAll() {

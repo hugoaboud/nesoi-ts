@@ -5,8 +5,8 @@ import { Verb } from '../Service';
 import Route from '@ioc:Adonis/Core/Route'
 import { Client } from '../Auth/Client';
 import { ResourceController as $ResourceController } from './ResourceController';
-
-export class Middleware {}
+import LogMiddleware from '../Log/LogMiddleware';
+import { Middleware } from '../Middleware';
 
 export interface ControllerEndpoint {
     verb: Verb
@@ -14,7 +14,7 @@ export interface ControllerEndpoint {
     version: string
     auth: typeof Auth
     trx: boolean
-    middlewares: string[]
+    middlewares: (typeof Middleware)[]
 }
 
 export abstract class BaseController {
@@ -24,7 +24,7 @@ export abstract class BaseController {
     client!: Client
 
     static $endpoints: Record<string, ControllerEndpoint> = {}
-    static $middlewares: (typeof Middleware)[] = []
+    static $middlewares: (typeof Middleware)[] = [ LogMiddleware ]
 
     static routes() {
         Object.keys(this.$endpoints).forEach(key => {
@@ -42,11 +42,14 @@ export abstract class BaseController {
             route.prefix($route.version)
             if ($route.auth) route.middleware($route.auth.name);
 
+            console.log(this.$middlewares);
+            console.log($route.middlewares);
+
             this.$middlewares.forEach(middleware => 
                 route.middleware(middleware.name))
 
             if ($route.middlewares)
-                $route.middlewares.forEach(name => route.middleware(name))
+                $route.middlewares.forEach(m => route.middleware(m.name))
 
             if ($route.path.endsWith(':id'))
                 route.where('id', IdMatcher)
@@ -84,7 +87,7 @@ export abstract class BaseController {
             version,
             auth,
             trx,
-            middlewares: []
+            middlewares: [ LogMiddleware ]
         }
         // // Read client from ctx
         // let fn = descriptor.value;
@@ -100,7 +103,7 @@ export abstract class BaseController {
 export function middleware(type: typeof Middleware) {
     return function(target: any, key: string) { 
         let controller = (target.constructor as typeof BaseController);
-        controller.$endpoints[key].middlewares.push(type.name)
+        controller.$endpoints[key].middlewares.push(type)
     }
 }
 
