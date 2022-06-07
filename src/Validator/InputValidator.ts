@@ -15,7 +15,7 @@ export abstract class InputValidator {
         input = JSON.parse(JSON.stringify(input));
         Object.keys(input).forEach(k => {
             let prop = input[k] as any as InputProp<any>;
-            this.checkProp(k, input[k]);
+            this.checkProp(k, input[k] as any);
             let validator = this.fromProp(input[k] as any) as any;
             if (prop.members) {
                 const members = this.fromSchema(prop.members);

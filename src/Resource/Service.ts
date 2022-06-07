@@ -121,11 +121,11 @@ export class Machine<T, S extends Schema> extends ResourceMachine<T,{
 
     /* Query */
 
-    query(client: Client): QueryBuilder {
+    query(client: Client): QueryBuilder<T> {
         return new QueryBuilder(client, this, true);
     }
 
-    protected async runQuery(client: Client, query: QueryBuilder): Promise<T[]> {
+    protected async runQuery(client: Client, query: QueryBuilder<T>): Promise<T[]> {
         const $ = (this.$ as any as Schema);
         const q = (query as any).toRansack();
         const url = this.route() + Settings.QUERY_ROUTE;

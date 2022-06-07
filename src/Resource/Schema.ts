@@ -53,7 +53,7 @@ export interface OutputSchema<Model> {
  */
 
 export interface InputSchema {
-    [ name: string]: InputPropBuilder<any >
+    [ name: string]: InputPropBuilder<any, any>
 }
 
 /**

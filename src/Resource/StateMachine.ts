@@ -237,14 +237,16 @@ export abstract class StateMachine< S extends Schema > {
     */
 
     private async validate(
+        client: Client,
         t: keyof S['Transitions'],
         input: Record<string,any>
     ): Promise<void> {
         const schema = this.$.Transitions[t as any].input;
         await this.validateFields(t, input);
-        await this.validateRules(schema, input, 'runtime');
-        await this.validateRules(schema, input, 'database');
+        await this.validateRules(client, schema, input, 'runtime');
         this.assignDefaults(schema, input);
+        await this.validateRules(client, schema, input, 'database');
+        await this.validateRules(client, schema, input, 'service');
         this.flagValidated(schema, input);
     }
 
@@ -258,6 +260,7 @@ export abstract class StateMachine< S extends Schema > {
     }
 
     private async validateRules(
+        client: Client,
         schema: InputSchema,
         input: Record<string,any>,
         scope: 'runtime' | 'database' | 'service',
@@ -269,19 +272,19 @@ export abstract class StateMachine< S extends Schema > {
             
             if (input.__validated__ && prop.scope === 'public') {
                 if (prop.members)
-                    await this.validateRules(prop.members, input[key], scope, prop.child);    
+                    await this.validateRules(client, prop.members, input[key], scope, prop.child);    
                 continue;
             }
 
             for (let r in prop.rules) {
                 const rule = prop.rules[r];
                 if (rule.scope !== scope) continue;
-                const model = resource ? resource.$.Model : this.$.Model;
-                const ok = await rule.fn(model, input[key]);
+                const machine = resource ? resource : this;
+                const ok = await rule.fn(input, key, machine, prop, client);
                 if (!ok) throw Exception.Rule(rule.msg(prop.alias));
             }
             if (prop.members)
-                await this.validateRules(prop.members, input[key], scope, prop.child);
+                await this.validateRules(client, prop.members, input[key], scope, prop.child);
         }     
     }
 
@@ -372,7 +375,7 @@ export abstract class StateMachine< S extends Schema > {
         }
 
         await this.sanitize(client, t, input);
-        await this.validate(t, input);
+        await this.validate(client, t, input);
 
         client.pushAction(this as any, t);
 

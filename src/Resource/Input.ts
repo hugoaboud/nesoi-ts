@@ -1,8 +1,9 @@
 import BaseModel from './Model'
-import { $ as $Resource, InputPropType } from '.'
+import { $ as $Resource, $Service, InputPropType } from '.'
 import { InputSchema, Schema } from './Schema'
-import { TransitionInput } from './StateMachine'
+import { StateMachine, TransitionInput } from './StateMachine'
 import ResourceMachine from './ResourceMachine'
+import { Client } from '../Auth/Client'
 
 /**
     [ Resource Input ]
@@ -26,9 +27,9 @@ type InputRequiredWhen = {
     param: string
     value: string | number | boolean
 }
-type InputRule<T> = {
+type InputRule = {
     scope: 'runtime' | 'database' | 'service'
-    fn: (model: typeof BaseModel, value: T) => Promise<boolean>,
+    fn: (input: Record<string, any>, key: string, machine: StateMachine<any>, prop: InputProp<any>, client: Client) => Promise<boolean>,
     msg: (prop: string) => string
 }
 
@@ -43,7 +44,7 @@ export type InputProp<T> = {
         value: string | number | boolean
     }
     default_value?: T
-    rules: InputRule<T>[]
+    rules: InputRule[]
     scope: InputScope
     alias: string
     type: InputType
@@ -62,7 +63,7 @@ export class InputPropBuilder<T,L> {
     protected name!: string
     protected required?: boolean | InputRequiredWhen = true
     protected default_value?: T
-    protected rules: InputRule<T>[] = []
+    protected rules: InputRule[] = []
     protected scope: InputScope = 'public';
 
     constructor(
@@ -72,11 +73,17 @@ export class InputPropBuilder<T,L> {
         protected members?: InputSchema,
         protected options?: readonly string[],
         protected child?: ResourceMachine<any,any>
-    ) {}
+    ) {
+        if (type === 'id') {
+            const scope = (child!.$ as any).Service ? 'service' : 'database';
+            if (!list) this.link(scope);
+            else this.links(scope);
+        }
+    }
 
     
     array() {
-        let prop = new InputPropBuilder<T[], L extends never ? never : L[]>(this.alias, this.type, true, this.members, this.options);
+        let prop = new InputPropBuilder<T[], L extends never ? never : L[]>(this.alias, this.type, true, this.members, this.options, this.child);
         return prop;
     }
 
@@ -88,12 +95,12 @@ export class InputPropBuilder<T,L> {
         return this;        
     }
     optional() {
-        let prop = new InputPropBuilder<T|undefined, L extends never ? never : L|undefined>(this.alias, this.type, this.list, this.members, this.options);
+        let prop = new InputPropBuilder<T|undefined, L extends never ? never : L|undefined>(this.alias, this.type, this.list, this.members, this.options, this.child);
         prop.required = false;
         return prop;
     }
     requiredIf(param: string, value: string|boolean|number = true) {
-        let prop = new InputPropBuilder<T|undefined, L extends never ? never : L|undefined>(this.alias, this.type, this.list, this.members, this.options);
+        let prop = new InputPropBuilder<T|undefined, L extends never ? never : L|undefined>(this.alias, this.type, this.list, this.members, this.options, this.child);
         prop.required = { param, value };
         return prop;
     }
@@ -115,7 +122,7 @@ export class InputPropBuilder<T,L> {
     greaterThan(value: number) {
         this.rules.push({
             scope: 'runtime',
-            fn: (async (_: typeof BaseModel, v:number) => v > value) as any,
+            fn: (async (input: Record<string,any>, k:string) => input[k] > value) as any,
             msg: (prop: string) => `${prop} deve ser maior do que ${value}`
         })
         return this;
@@ -123,7 +130,7 @@ export class InputPropBuilder<T,L> {
     lessThan(value: number) {
         this.rules.push({
             scope: 'runtime',
-            fn: (async (_: typeof BaseModel, v:number) => v < value) as any,
+            fn: (async (input: Record<string,any>, k:string) => input[k] < value) as any,
             msg: (prop: string) => `${prop} deve ser menor do que ${value}`
         })
         return this;
@@ -131,7 +138,7 @@ export class InputPropBuilder<T,L> {
     greaterThanOrEqualTo(value: number) {
         this.rules.push({
             scope: 'runtime',
-            fn: (async (_: typeof BaseModel, v:number) => v >= value) as any,
+            fn: (async (input: Record<string,any>, k:string) => input[k] >= value) as any,
             msg: (prop: string) => `${prop} deve ser maior ou igual a ${value}`
         })
         return this;
@@ -139,7 +146,7 @@ export class InputPropBuilder<T,L> {
     lessThanOrEqualTo(value: number) {
         this.rules.push({
             scope: 'runtime',
-            fn: (async (_: typeof BaseModel, v:number) => v <= value) as any,
+            fn: (async (input: Record<string,any>, k:string) => input[k] <= value) as any,
             msg: (prop: string) => `${prop} deve ser menor ou igual a ${value}`
         })
         return this;
@@ -147,9 +154,9 @@ export class InputPropBuilder<T,L> {
     between(start: number, end: number, include_start = true, include_end = true) {
         this.rules.push({
             scope: 'runtime',
-            fn: (async (_: typeof BaseModel, v:number) => 
-                (v > start || v == start && include_start) && 
-                (v < end   || v == end   && include_end)
+            fn: (async (input: Record<string,any>, k:string) => 
+                (input[k] > start || input[k] == start && include_start) && 
+                (input[k] < end   || input[k] == end   && include_end)
             ) as any,
             msg: (prop: string) => `${prop} deve estar entre ${start} e ${end}`
         })
@@ -161,13 +168,43 @@ export class InputPropBuilder<T,L> {
     noDuplicate(column: string) {
         this.rules.push({
             scope: 'database',
-            fn: (async (model: typeof BaseModel, v: string) => {
-                const duplicate = await model.findBy(column, v);
+            fn: (async (input: Record<string,any>, k: string, machine: StateMachine<any>) => {
+                const duplicate = await (machine.$.Model as typeof BaseModel).findBy(column, input[k]);
                 return duplicate == null;
             }) as any,
             msg: (prop: string) => `${prop} já existe`
         })
         return this;
+    }
+
+    /* Link (id) Rules */
+
+    private link(scope: 'database'|'service') {
+        this.rules.push({
+            scope,
+            fn: (async (input: Record<string,any>, k: string, _: StateMachine<any>, prop:InputProp<any>, client: Client) => {
+                const child = await prop.child!.readOne(client, input[k]);
+                const name = '$' + k.replace(/_id$/,'');
+                input[name] = child;
+                return true;
+            }) as any,
+            msg: (prop: string) => `${prop} não encontrado`
+        })
+    }
+
+    private links(scope: 'database'|'service') {
+        this.rules.push({
+            scope,
+            fn: (async (input: Record<string,any>, k: string, _: StateMachine<any>, prop:InputProp<any>, client: Client) => {
+                const children = await prop.child!.readMany(client, input[k]);
+                let name = '$' + k.replace(/_ids$/,'');
+                if (name.endsWith('y')) name.replace(/y$/,'ies');
+                else name += 's';
+                input[name] = children;
+                return children.length === input[k].length;
+            }) as any,
+            msg: (prop: string) => `${prop} não encontrados`
+        })
     }
 }
 
