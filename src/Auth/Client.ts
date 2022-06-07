@@ -13,7 +13,7 @@ export interface ClientAction<S extends Schema, R extends ResourceMachine<any,S>
 
 export class Client {
     public trx!: TransactionClientContract
-    public stack: ClientAction<any,any>[] = []
+    private stack: ClientAction<any,any>[] = []
     constructor(
         public user: User,
         public tokens: Record<string,string> = {}
@@ -27,7 +27,13 @@ export class Client {
         return this.stack.pop();
     }
 
-    lastAction() {
-        return this.stack[this.stack.length-1];
+    stackLength() {
+        return this.stack.length;
+    }
+
+    getAction(index: number) {
+        if (index < 0)
+            return this.stack[this.stack.length+index];
+        else return this.stack[index];
     }
 }

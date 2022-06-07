@@ -189,8 +189,8 @@ export abstract class StateMachine< S extends Schema > {
     ): Promise<void> {
 
         let scope = 'public';
-        if (client.stack.length > 0) {
-            const last_action = client.stack[client.stack.length-1];
+        if (client.stackLength() > 0) {
+            const last_action = client.getAction(-1);
             if (this === last_action.resource) scope = 'private';
             else scope = 'protected';
         }
@@ -411,7 +411,12 @@ export abstract class StateMachine< S extends Schema > {
             throw Exception.SaveFailed(e)
         });
 
-        if (trans.after) await trans.after(obj, input, client, from);
+        const last = client.getAction(-2);
+        const origin = last ? last.resource.name() + '.' + (last.transition as string) : ''
+        await Log(this as any, obj.id, client)
+            .info(t as string, origin, `${trans.alias} ${this.alias()} id:${obj.id}`, input);
+
+        if (trans.after) await trans.after(obj, input, client, from)
 
         if (this.$.Hooks) {
             for (let h in this.$.Hooks) {
@@ -425,11 +430,6 @@ export abstract class StateMachine< S extends Schema > {
         }
 
         client.popAction();
-        
-        const last = client.lastAction();
-        const origin = last ? last.resource.name() + '.' + (last.transition as string) : ''
-        await Log(this as any, obj.id, client)
-            .info(t as string, origin, `${trans.alias} ${this.alias()} id:${obj.id}`, input);
     }
 
     protected abstract save(
