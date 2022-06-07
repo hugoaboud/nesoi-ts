@@ -6,6 +6,7 @@ import ResourceMachine from "./ResourceMachine";
 import { PropType } from ".";
 import { QueryBuilder } from "./Helpers/Query";
 import { Settings } from "../Settings";
+import { CamelToSnakeCase } from "../Util/String";
 
 /* Model */
 
@@ -114,8 +115,8 @@ export class Machine<T, S extends Schema> extends ResourceMachine<T,{
 
     name(snake_case = false): string {
         const route = (this.$ as any as Schema).Name;
-        if (snake_case) return route;
-        return route;
+        if (!snake_case) return route;
+        return CamelToSnakeCase(route);
     }
 
     private route() {
