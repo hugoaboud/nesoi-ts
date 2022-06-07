@@ -275,12 +275,16 @@ export abstract class StateMachine< S extends Schema > {
                 continue;
             }
 
-            for (let r in prop.rules) {
-                const rule = prop.rules[r];
-                if (rule.scope !== scope) continue;
-                const machine = resource ? resource : this;
-                const ok = await rule.fn(input, key, machine, prop, client);
-                if (!ok) throw Exception.Rule(rule.msg(prop.alias));
+            const data = Array.isArray(input) ? input : [input];
+            for (let d in data) {
+                const obj = data[d];
+                for (let r in prop.rules) {
+                    const rule = prop.rules[r];
+                    if (rule.scope !== scope) continue;
+                    const machine = resource ? resource : this;
+                    const ok = await rule.fn(obj, key, machine, prop, client);
+                    if (!ok) throw Exception.Rule(rule.msg(prop.alias));
+                }
             }
             if (prop.members)
                 await this.validateRules(client, prop.members, input[key], scope, prop.child);
