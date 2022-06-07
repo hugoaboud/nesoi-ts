@@ -8,6 +8,7 @@ import BaseModel from '../Model';
 import { MultiTenancy } from './MultiTenancy';
 
 type Operator = 'like'|'='|'>='|'<='|'in'
+type Value = string|number|string[]|number[]
 enum OpRansackToRule {
     cont = 'like',
     eq = '=',
@@ -26,12 +27,12 @@ interface Param {
     path: ResourceMachine<any,any>[]
     param: string,
     op: Operator,
-    value: string|number|string[]|number[]
+    value: Value
 }
 
 type Rule = Param[]
 
-export class QueryBuilder {
+export class QueryBuilder<T> {
 
     protected rules: Rule[] = []
     protected sort?: Sort
@@ -43,7 +44,7 @@ export class QueryBuilder {
         protected service = false
     ) {}
     
-    rule(rule_params: string | string[], op: Operator, value: string|number): QueryBuilder {
+    rule(rule_params: string | string[], op: Operator, value: Value): QueryBuilder<T> {
         
         if (!Array.isArray(rule_params)) rule_params = [rule_params];
 
@@ -60,14 +61,14 @@ export class QueryBuilder {
         return this;
     }
     
-    sortedBy(param: string, dir: 'asc'|'desc' = 'asc'): QueryBuilder {
+    sortedBy(param: string, dir: 'asc'|'desc' = 'asc'): QueryBuilder<T> {
         this.sort = {
             param, dir
         };
         return this;
     }
     
-    expectFormat(format: Record<string,any>): QueryBuilder {
+    expectFormat(format: Record<string,any>): QueryBuilder<T> {
         this.out = format;
         return this;
     }
@@ -76,7 +77,7 @@ export class QueryBuilder {
         res: ResourceMachine<any,any>,
         param_path: string,
         op: Operator,
-        value: string|number,
+        value: Value,
         path?: ResourceMachine<any,any>[]
     ): Param {
         if (this.service) {
@@ -118,7 +119,7 @@ export class QueryBuilder {
         client: Client,
         res: ResourceMachine<any,any>,
         q: Record<string,any>
-    ): QueryBuilder {
+    ): QueryBuilder<any> {
         if (!q) throw Exception.QNotFound();
         const query = new QueryBuilder(client, res);
         for (let rule in q) {
@@ -147,7 +148,7 @@ export class QueryBuilder {
         return q;
     }
 
-    public async run() {
+    public async run(): Promise<T[]> {
         return (this.res as any).runQuery(this.client, this);
     }
 
@@ -167,7 +168,7 @@ export class Query {
     public res!: ResourceMachine<any,any>
     public service!: boolean
 
-    static async run(client: Client, builder: QueryBuilder, settings: QuerySettings): Promise<BaseModel[]> {
+    static async run(client: Client, builder: QueryBuilder<any>, settings: QuerySettings): Promise<BaseModel[]> {
         
         let q = builder as any as Query;
         let model = q.res.$.Model as (typeof BaseModel);
@@ -202,7 +203,7 @@ export class Query {
         if (!param.path.length) return;
 
         const res = param.path.shift()!;
-        const builder = (res.query(client) as any).addRule([param]) as QueryBuilder;
+        const builder = (res.query(client) as any).addRule([param]) as QueryBuilder<any>;
         const rows = await this.run(client, builder, settings);
 
         let fkey_child = res.name(true) + '_id';

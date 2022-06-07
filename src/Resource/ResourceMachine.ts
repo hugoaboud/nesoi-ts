@@ -60,6 +60,10 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
         return this.build(client, obj);
     }
 
+    async readMany(client: Client, ids: number[]): Promise<T[]> {
+        return this.query(client).rule('id','in',ids).run();
+    }
+
     async readOneGroup(client: Client, key: keyof Model<S>, id: number): Promise<T[]> {
         const objs = await this.readOneGroupFromModel(client, this.$.Model, key as string, id);
         return this.buildAll(client, objs);
@@ -67,11 +71,11 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
     
     /* Query */
 
-    query(client: Client): QueryBuilder {
-        return new QueryBuilder(client, this);
+    query(client: Client): QueryBuilder<T> {
+        return new QueryBuilder<T>(client, this);
     }
 
-    protected async runQuery(client: Client, query: QueryBuilder): Promise<T[]> {
+    protected async runQuery(client: Client, query: QueryBuilder<T>): Promise<T[]> {
         const objs = await Query.run(client, query, {
             multi_tenancy: this.multi_tenancy
         });
