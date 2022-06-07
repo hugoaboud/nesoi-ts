@@ -37,6 +37,7 @@ export function Schema<Model extends BaseModel>() {
     >(schema: {
         Service: typeof Service
         Version: string
+        Name: string
         Route: string
         Query?: Record<string,string>,
         Parse?: (obj: Model) => T
@@ -46,6 +47,7 @@ export function Schema<Model extends BaseModel>() {
         return class Schema implements Schema {
             Service!: typeof Service
             Version!: string
+            Name!: string
             Route!: string
             Query!: Record<string,string>
             Parse!: (obj: Model) => T
@@ -55,6 +57,7 @@ export function Schema<Model extends BaseModel>() {
             static $ = {
                 Service: schema.Service,
                 Version: schema.Version,
+                Name: schema.Name,
                 Route: schema.Route,
                 Parse: schema.Parse || (obj => obj),
                 Query: schema.Query || {},
@@ -69,6 +72,7 @@ export type Schema = {
     Service: typeof Service
     Version: string
     Route: string
+    Name: string
     Query: Record<string,string>
     Parse:      (obj: any) => any
     Output: OutputSchema<any>
@@ -109,7 +113,7 @@ export class Machine<T, S extends Schema> extends ResourceMachine<T,{
     }
 
     name(snake_case = false): string {
-        const route = (this.$ as any as Schema).Route;
+        const route = (this.$ as any as Schema).Name;
         if (snake_case) return route;
         return route;
     }
