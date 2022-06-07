@@ -195,6 +195,7 @@ export class Query {
             });
         }
 
+        query = query.whereNot('state', 'deleted');
         return query as any;
     }
 

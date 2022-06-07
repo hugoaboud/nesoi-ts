@@ -8,6 +8,7 @@ import { Client } from '../Auth/Client';
 import { InputSchema, Schema, TransitionSchema } from './Schema';
 import ResourceMachine from './ResourceMachine';
 import { InputValidator } from '../Validator/InputValidator';
+import { Status } from '../Service';
 
 /* 
     [Resource State]
@@ -364,6 +365,7 @@ export abstract class StateMachine< S extends Schema > {
     ): Promise<void> {
 
         const trans = this.$.Transitions[t as string];
+        if (!trans) throw Exception.InvalidTransition(t as any);
         
         const from = obj.state;
         const to = trans.to;
@@ -432,20 +434,24 @@ class Exception extends BaseException {
         return new this(msg, 402, this.code);
     }
 
+    static InvalidTransition(transition: string) {
+        return new this(`Transição inválida: ${transition}`, Status.INTERNAL_SERVER, this.code);
+    }
+
     static NoTransitionFromCurrentState(event: string, state: string) {
-        return new this(`Não é possível ${event} a partir do estado ${state}`, 402, this.code);
+        return new this(`Não é possível ${event} a partir do estado ${state}`, Status.BADREQUEST, this.code);
     }
 
     static TransitionGuardFailed(e: Error) {
-        return new this(`[transition|guard] ${e.message}`, 402, this.code);
+        return new this(`[transition|guard] ${e.message}`, Status.BADREQUEST, this.code);
     }
 
     static TransitionFailed(e: Error) {
-        return new this(`[transition|after] ${e.message}`, 402, this.code);
+        return new this(`[transition|after] ${e.message}`, Status.BADREQUEST, this.code);
     }
 
     static SaveFailed(e: Error) {
-        return new this(`[save] ${e.message}`, 402, this.code);
+        return new this(`[save] ${e.message}`, Status.BADREQUEST, this.code);
     }
 
 }

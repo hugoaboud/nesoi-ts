@@ -7,7 +7,7 @@ import { Settings } from '../Settings';
 import { QueryBuilder } from '../Resource/Helpers/Query';
 
 export type ControllerTransition<S extends Schema> = {
-    transition: keyof Omit<S['Transitions'],'create'>
+    transition: keyof Omit<S['Transitions'],'create'|'delete'>
     auth?: typeof Auth
 }
 
@@ -41,6 +41,10 @@ export function ResourceController<T,S extends Schema>(
             return resource.create(this.client, ctx.request.body() as any);
         }
 
+        async delete(ctx: HttpContextContract) {
+            return resource.run(this.client, 'delete' as any, ctx.params.id, ctx.request.body() as any);
+        }
+
         async query(ctx: HttpContextContract) {
             const body = ctx.request.body();
             return QueryBuilder.fromRansack(this.client, resource, body.q).run();
@@ -59,14 +63,21 @@ export function ResourceController<T,S extends Schema>(
                 auth, trx: true, version, middlewares: []
             }
 
+            this.$endpoints['query'] = {
+                verb: 'post', path: path + Settings.QUERY_ROUTE,
+                auth, trx: true, version, middlewares: []
+            }
+
             this.$endpoints['create'] = {
                 verb: 'post', path,
                 auth, trx: true, version, middlewares: []
             }
 
-            this.$endpoints['query'] = {
-                verb: 'post', path: path + Settings.QUERY_ROUTE,
-                auth, trx: true, version, middlewares: []
+            if ('delete' in resource.$.Transitions) {
+                this.$endpoints['delete'] = {
+                    verb: 'delete', path: path+'/:id',
+                    auth, trx: true, version, middlewares: []
+                }
             }
 
             transitions.forEach(t => {

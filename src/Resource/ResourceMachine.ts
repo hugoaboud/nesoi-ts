@@ -208,6 +208,7 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
         let query = model.query();
         if (client.trx) query = query.useTransaction(client.trx);
         query = this.multi_tenancy.decorateReadQuery(client, query);
+        query = query.whereNot('state', 'deleted');
         return query.where('id', id).first() as Model<S> | null;
     }
 
@@ -218,6 +219,7 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
         let query = model.query();
         if (client.trx) query = query.useTransaction(client.trx);
         query = this.multi_tenancy.decorateReadQuery(client, query);
+        query = query.whereNot('state', 'deleted');
         return await query as Model<S>[];
     }
 
@@ -230,6 +232,7 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
         let query = model.query();
         if (client.trx) query = query.useTransaction(client.trx);
         query = this.multi_tenancy.decorateReadQuery(client, query);
+        query = query.whereNot('state', 'deleted');
         return await query.where(key, id) as Model<S>[];
     }
 

@@ -1,5 +1,5 @@
 import BaseModel from './Model'
-import { $ as $Resource, $Service, InputPropType } from '.'
+import { $ as $Resource, InputPropType } from '.'
 import { InputSchema, Schema } from './Schema'
 import { StateMachine, TransitionInput } from './StateMachine'
 import ResourceMachine from './ResourceMachine'
