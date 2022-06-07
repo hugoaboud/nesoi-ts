@@ -2,7 +2,7 @@ import { Client } from "../Auth/Client";
 import LogModel from "../Database/Models/LogModel";
 import ResourceMachine from "../Resource/ResourceMachine";
 
-export type Level = 'debug' | 'info' | 'warn' | 'error'
+export type Level = 'debug' | 'info' | 'warn' | 'error' | 'crash'
 export type ReadBy = 'level' | 'event' | 'origin' | 'user_id'
 
 type Scope = ResourceMachine<any,any>
@@ -45,13 +45,13 @@ class Logger {
         return this.push('debug', event, origin, message, data);
     }
 
-    async error(
+    async info(
         event: string,
         origin: string,
         message: string,
         data: Record<string,any>
     ): Promise<LogModel> {
-        return this.push('error', event, origin, message, data);
+        return this.push('info', event, origin, message, data);
     }
 
     async warn(
@@ -63,13 +63,22 @@ class Logger {
         return this.push('warn', event, origin, message, data);
     }
 
-    async info(
+    async error(
         event: string,
         origin: string,
         message: string,
         data: Record<string,any>
     ): Promise<LogModel> {
-        return this.push('info', event, origin, message, data);
+        return this.push('error', event, origin, message, data);
+    }
+
+    async crash(
+        event: string,
+        origin: string,
+        message: string,
+        data: Record<string,any>
+    ): Promise<LogModel> {
+        return this.push('crash', event, origin, message, data);
     }
 
     async readBy(key: ReadBy, value: string) {

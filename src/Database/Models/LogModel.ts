@@ -8,10 +8,10 @@ export default class LogModel extends BaseModel {
   public id!: number
   
   @column()
-  public level!: Level
+  public user_id?: number
 
   @column()
-  public user_id?: number
+  public level!: Level
 
   @column()
   public scope!: 'resource'|'job'

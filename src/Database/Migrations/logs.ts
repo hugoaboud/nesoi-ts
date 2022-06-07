@@ -1,6 +1,6 @@
 import BaseSchema from '@ioc:Adonis/Lucid/Schema'
 
-export class WorkerLogs extends BaseSchema {
+export default class Logs extends BaseSchema {
     protected tableName = 'logs'
 
     public async up () {
@@ -15,8 +15,7 @@ export class WorkerLogs extends BaseSchema {
             table.string('origin').notNullable()
             table.string('message').notNullable()
             table.specificType('data','jsonb').notNullable()
-            table.timestamp('created_at', { useTz: true }).notNullable()
-            table.timestamp('updated_at', { useTz: true }).notNullable()
+            table.timestamp('timestamp', { useTz: true }).notNullable()
         })
     }
 

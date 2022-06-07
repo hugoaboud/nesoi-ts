@@ -42,9 +42,6 @@ export abstract class BaseController {
             route.prefix($route.version)
             if ($route.auth) route.middleware($route.auth.name);
 
-            console.log(this.$middlewares);
-            console.log($route.middlewares);
-
             this.$middlewares.forEach(middleware => 
                 route.middleware(middleware.name))
 
