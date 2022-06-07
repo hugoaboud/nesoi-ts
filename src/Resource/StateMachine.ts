@@ -117,8 +117,6 @@ type LinkInputProps<T> = {
     [K in keyof T]: T[K] extends InputPropBuilder<any, infer Y> ? (Y extends never ? never : K ) : never
 }[keyof T]
 
-type NonLinkInputProps<T> = Omit<T, LinkInputProps<T>>
-
 type LinkInputPropType<T> = 
     T extends InputPropBuilder<any, infer Y> ? Y : never
 
@@ -140,7 +138,7 @@ export type TransitionCallback<
 > = (
     obj: Model,
     input: {
-        [k in keyof NonLinkInputProps<Input>]: InputPropType<Input[k]>
+        [k in keyof Input]: InputPropType<Input[k]>
     } & {
         [k in LinkInputProps<Input> as LinkName<string & k>]: LinkInputPropType<Input[k]>
     },

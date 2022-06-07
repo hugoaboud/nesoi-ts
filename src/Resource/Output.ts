@@ -1,5 +1,3 @@
-import { Client } from "../Auth/Client"
-
 type PropType = 'boolean'|'int'|'decimal'|'string'|'money'
 type PropSource = 'model'|'entity'
 
@@ -14,7 +12,7 @@ export class Prop<Model, T> {
         public type: PropType,
         public source: PropSource,
         public prop: keyof Model,
-        public fn: (obj: Model, client: Client) => any,
+        public fn: (obj: Model, prop: Prop<any,any>) => any,
         public list: boolean = false,
         public async = false,
     ) {}
@@ -35,7 +33,8 @@ export function $<Model>() {
         boolean: new Prop<Model, boolean>('boolean', source, prop, (obj: Model) => {
             return obj[prop]
         }),
-        int: new Prop<Model, number>('int', source, prop, (obj: Model) => {
+        int: new Prop<Model, number>('int', source, prop, (obj: Model, p: Prop<any,any>) => {
+            if (p.list) return obj[prop];
             return parseInt(obj[prop] as any)
         }),
         decimal: new Prop<Model, number>('decimal', source, prop, (obj: Model) => {

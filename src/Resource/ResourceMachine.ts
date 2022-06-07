@@ -143,9 +143,9 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
             if (prop instanceof Prop) {
                 if (prop.source != 'model') continue;
                 if (prop.async)
-                    entity[key] = await prop.fn(obj, client);
+                    entity[key] = await prop.fn(obj, prop);
                 else
-                    entity[key] = prop.fn(obj, client);
+                    entity[key] = prop.fn(obj, prop);
                 continue;
             }
             else if (prop instanceof GraphLink) {
