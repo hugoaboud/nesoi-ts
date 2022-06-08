@@ -64,11 +64,12 @@ export abstract class InputValidator {
             else if (prop.scope === 'private')
                 requiredWhen.push(rules.requiredWhen('__scope__', 'in', ['private']))
         }
-    
+
+
         if (prop.required === false || requiredWhen.length) {
             if (type === 'enum') validator = validator.optional(prop.options, requiredWhen);
-            if (type === 'date') validator = validator.optional(undefined, requiredWhen);
-            validator = validator.optional(requiredWhen);
+            else if (type === 'date') validator = validator.optional(undefined, requiredWhen);
+            else validator = validator.optional(requiredWhen);
         }
         else {
             if (prop.type === 'enum') validator = validator(prop.options);
