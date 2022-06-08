@@ -7,6 +7,7 @@ import { Settings } from '../Settings';
 import { QueryBuilder } from '../Resource/Helpers/Query';
 import LogMiddleware from '../Log/LogMiddleware';
 import { Middleware } from '../Middleware';
+import { Pagination } from '../Resource/Helpers/Pagination';
 
 export type ControllerTransition<S extends Schema> = {
     transition: keyof Omit<S['Transitions'],'create'|'delete'>
@@ -30,9 +31,28 @@ export function ResourceController<T,S extends Schema>(
         static $endpoints: Record<string, ControllerEndpoint> = {}
         static $middlewares:(typeof Middleware)[] = [ LogMiddleware ]
         static route = base
+        
+        pagination?: Pagination
+
+        async guard(ctx: HttpContextContract, trx = true, fn: (ctx: HttpContextContract) => Promise<any>) {
+
+            const qs = ctx.request.qs();
+
+            if ('page' in qs) {
+                const order_by = qs.order_by?.split(',') || [];
+                const order_desc = qs.order_desc?.split(',') || [];
+                const order = order_by.map((column: string, i: number) => ({
+                    column,
+                    direction: (order_desc[i] === 'true') ? 'desc' : 'asc'
+                }))
+                this.pagination = new Pagination(parseInt(qs.page), parseInt(qs.per_page), order);
+            }
+
+            return super.guard(ctx, trx, fn);
+        }
 
         async readAll() {
-            return resource.readAll(this.client);
+            return resource.readAll(this.client, this.pagination);
         }
 
         async readOne(ctx: HttpContextContract) {

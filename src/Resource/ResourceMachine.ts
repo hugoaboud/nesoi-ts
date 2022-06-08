@@ -13,6 +13,7 @@ import { StateMachine } from './StateMachine';
 import { Query, QueryBuilder } from './Helpers/Query';
 import { ColumnBasedMultiTenancy, MultiTenancy } from './Helpers/MultiTenancy';
 import { Settings } from '../Settings';
+import { Pagination } from './Helpers/Pagination';
 
 /**
     [ Resource Machine ]
@@ -49,8 +50,8 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
 
     /* Read */
 
-    async readAll(client: Client): Promise<T[]> {
-        const objs = await this.readAllFromModel(client, this.$.Model);
+    async readAll(client: Client, pagination?: Pagination): Promise<T[]> {
+        const objs = await this.readAllFromModel(client, this.$.Model, pagination);
         return this.buildAll(client, objs);
     }
 
@@ -214,12 +215,14 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
 
     protected async readAllFromModel(
         client: Client,
-        model: typeof BaseModel
+        model: typeof BaseModel,
+        pagination?: Pagination
     ) {
         let query = model.query();
         if (client.trx) query = query.useTransaction(client.trx);
         query = this.multi_tenancy.decorateReadQuery(client, query);
         query = query.whereNot('state', 'deleted');
+        if (pagination) query = pagination.decorateReadQuery(query);
         return await query as Model<S>[];
     }
 
