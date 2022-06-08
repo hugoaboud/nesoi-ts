@@ -19,12 +19,11 @@ export class GraphLink<R extends ResourceMachine<any,any>> {
    Entry point for the Graph Link Builder.
 */
 
-export const $ = {
-
-    child: <R extends ResourceMachine<any,any>>(resource: R) => 
-        new GraphLink(resource),
+export function $<R extends ResourceMachine<any,any>>(resource: R) {
     
-    children: <R extends ResourceMachine<any,any>>(resource: R) => 
-        new GraphLink(resource, true)
+    return {
+        child: new GraphLink(resource),
+        children: new GraphLink(resource, true)
+    }
 
 }
