@@ -62,6 +62,7 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
     }
 
     async readMany(client: Client, ids: number[]): Promise<T[]> {
+        if (!ids.length) return [];
         return this.query(client).rule('id','in',ids).run();
     }
 
