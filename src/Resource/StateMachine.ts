@@ -311,7 +311,7 @@ export abstract class StateMachine< S extends Schema > {
                 return;
             }
 
-            if (isEmpty(input[key]) && !isEmpty(prop.default_value))
+            if (isEmpty(input[key]) && prop.default_value !== undefined)
                 input[key] = prop.default_value;
             if (prop.members)
                 this.assignDefaults(prop.members, input[key] || {});
