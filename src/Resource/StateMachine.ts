@@ -416,7 +416,12 @@ export abstract class StateMachine< S extends Schema > {
         await Log(this as any, obj.id, client)
             .info(t as string, origin, `${trans.alias} ${this.alias()} id:${obj.id}`, input);
 
-        if (trans.after) await trans.after(obj, input, client, from)
+        if (trans.after) {
+            await trans.after(obj, input, client, from)
+            await this.save(client, obj, t === 'create').catch(e => {
+                throw Exception.SaveFailed(e)
+            });
+        }
 
         if (this.$.Hooks) {
             for (let h in this.$.Hooks) {
