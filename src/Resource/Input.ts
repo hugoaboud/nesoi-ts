@@ -4,6 +4,7 @@ import { InputSchema, Schema } from './Schema'
 import { StateMachine, TransitionInput } from './StateMachine'
 import ResourceMachine from './ResourceMachine'
 import { Client } from '../Auth/Client'
+import { isEmpty } from '../Validator/ResourceSchemaValidator'
 
 /**
     [ Resource Input ]
@@ -183,6 +184,7 @@ export class InputPropBuilder<T,L> {
         this.rules.push({
             scope,
             fn: (async (input: Record<string,any>, k: string, _: StateMachine<any>, prop:InputProp<any>, client: Client) => {
+                if (isEmpty(input[k])) return true;
                 const child = await prop.child!.readOne(client, input[k]);
                 const name = '$' + k.replace(/_id$/,'');
                 input[name] = child;
@@ -196,6 +198,7 @@ export class InputPropBuilder<T,L> {
         this.rules.push({
             scope,
             fn: (async (input: Record<string,any>, k: string, _: StateMachine<any>, prop:InputProp<any>, client: Client) => {
+                if (isEmpty(input[k])) return true;
                 const children = await prop.child!.readMany(client, input[k]);
                 let name = '$' + k.replace(/_ids$/,'');
                 if (name.endsWith('y')) name.replace(/y$/,'ies');
