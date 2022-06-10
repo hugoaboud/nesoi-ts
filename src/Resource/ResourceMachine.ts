@@ -88,29 +88,50 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
 
     async create(
         client: Client,
-        input: Input<S,'create'>,
-        extra?: Record<string,any>
+        input: Input<S,'create'>
     ): Promise<T> {
         const obj = new this.$.Model() as Model<S>;
         obj.state = 'void';
-        if (extra) Object.assign(input, extra);
         await this.runFromModel(client, 'create', obj, input);
         return this.build(client, obj);
     }
 
     async createMany(
         client: Client,
-        inputs: Input<S,'create'>[],
-        extra?: (input: Input<S,'create'>) => Record<string,any>
+        inputs: Input<S,'create'>[]
     ): Promise<T[]> {
         const objs = [] as T[];
         for (let i in inputs) {
             const input = inputs[i];
-            if (extra) Object.assign(input, extra(input));
             const obj = await this.create(client, input);
             objs.push(obj);
         }
         return objs;
+    }
+
+    /* Edit */
+
+    async edit(
+        client: Client,
+        input: {id?: number} & Input<S,'edit'>
+    ): Promise<void> {
+        if (!input.id) {
+            await this.create(client, input);
+            return;
+        }
+        const obj = await this.readOneFromModel(client, this.$.Model, input.id);
+        if (!obj) throw Exception.NotFound(input.id);
+        await this.runFromModel(client, 'edit', obj, input);
+    }
+
+    async editMany(
+        client: Client,
+        inputs: Input<S,'edit'>[]
+    ): Promise<void> {
+        for (let i in inputs) {
+            const input = inputs[i];
+            await this.edit(client, input);
+        }
     }
 
     /**

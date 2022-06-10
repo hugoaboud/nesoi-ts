@@ -73,7 +73,7 @@ export function ResourceController<T,S extends Schema>(
         }
 
         async edit(ctx: HttpContextContract) {
-            return resource.run(this.client, 'edit' as any, ctx.params.id, ctx.request.body() as any);
+            return resource.edit(this.client, ctx.request.body() as any);
         }
                 
         static routes() {
