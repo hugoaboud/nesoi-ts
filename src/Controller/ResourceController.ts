@@ -71,6 +71,10 @@ export function ResourceController<T,S extends Schema>(
             const body = ctx.request.body();
             return QueryBuilder.fromRansack(this.client, resource, body.q).run();
         }
+
+        async edit(ctx: HttpContextContract) {
+            return resource.run(this.client, 'edit' as any, ctx.params.id, ctx.request.body() as any);
+        }
                 
         static routes() {
             let path = '/' + this.route;
@@ -98,6 +102,13 @@ export function ResourceController<T,S extends Schema>(
             if ('delete' in resource.$.Transitions) {
                 this.$endpoints['delete'] = {
                     verb: 'delete', path: path+'/:id',
+                    auth, trx: true, version, middlewares: []
+                }
+            }
+
+            if ('edit' in resource.$.Transitions) {
+                this.$endpoints['edit'] = {
+                    verb: Settings.EDIT_VERB, path: path+'/:id',
                     auth, trx: true, version, middlewares: []
                 }
             }

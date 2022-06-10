@@ -10,7 +10,7 @@ export enum Status {
 }
 
 /** REST verbs allowed for service requests. */
-export type Verb = 'get'|'post'|'put'|'delete';
+export type Verb = 'get'|'post'|'put'|'delete'|'patch';
 
 export default abstract class Service {
 

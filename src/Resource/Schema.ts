@@ -22,9 +22,10 @@ export type TransitionSchema<
     Model,
     States
 > = {
-    create: Transition<Model,'void','created',any>
+    create: Transition<Model,'void','created',any>,
+    edit?: Transition<Model,keyof States,'.',any>
 } &
-    Record<string, Transition<Model,keyof States|'void'|'*',keyof States,any>>
+    Record<string, Transition<Model,keyof States|'void'|'*',keyof States|'.',any>>
 
 /**
     [ Resource Hook Schema ]

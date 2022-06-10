@@ -1,6 +1,7 @@
 export namespace Settings {
 
     export const QUERY_ROUTE = '/filters';
+    export const EDIT_VERB = 'patch';
 
     export namespace MultiTenancy {
 

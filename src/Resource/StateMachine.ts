@@ -44,9 +44,13 @@ export function Transition<
     To,
     Input extends InputSchema
 >(
-    transition: Transition<Model,From,To,Input>
+    alias: string,
+    transition: Omit<Transition<Model, From, To, Input>,'alias'>
 ) {
-    return transition;
+    return {
+        alias,
+        ...transition
+    };
 }
 
 export type TransitionInput<
@@ -132,17 +136,25 @@ type LinkName<S extends string> = S extends `${infer Head}_id` ? `$${Head}` : (
     A callback run by a transition.
  */
 
+export type TransitionCallbackInput<
+    Input
+> = {
+    [k in keyof Input]: InputPropType<Input[k]>
+} & {
+    [k in LinkInputProps<Input> as LinkName<string & k>]: LinkInputPropType<Input[k]>
+}
+/**
+    [Resource Transition Callback]
+    A callback run by a transition.
+ */
+
 export type TransitionCallback<
     Model,
     Input,
     Output
 > = (
     obj: Model,
-    input: {
-        [k in keyof Input]: InputPropType<Input[k]>
-    } & {
-        [k in LinkInputProps<Input> as LinkName<string & k>]: LinkInputPropType<Input[k]>
-    },
+    input: TransitionCallbackInput<Input>,
     client: Client,
     from: string
 ) =>
@@ -377,7 +389,7 @@ export abstract class StateMachine< S extends Schema > {
         if (!trans) throw Exception.InvalidTransition(t as any);
         
         const from = obj.state;
-        const to = trans.to;
+        const to = trans.to !== '.' ? trans.to : from;
         const old_state = this.$.States[from];
         // const new_state = this.$.States[to];
         

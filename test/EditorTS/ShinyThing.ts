@@ -28,8 +28,7 @@ class $ShinyThing extends $.Schema({
 
     Transitions: {
 
-        create: $.Transition({
-            alias: 'Criar',
+        create: $.Transition('Criar', {
             from: 'void',
             to: 'created',
             input: {
@@ -63,8 +62,13 @@ class $ShinyThing extends $.Schema({
             },
         }),
 
-        break: $.Transition({
-            alias: 'Quebrar',
+        edit: $.Transition('Editar', {
+            from: 'created',
+            to: '.',
+            input: {}
+        }),
+
+        break: $.Transition('Quebrar', {
             from: 'created',
             to: 'broken',
             input: {
