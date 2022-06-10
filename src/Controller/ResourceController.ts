@@ -10,7 +10,7 @@ import { Middleware } from '../Middleware';
 import { Pagination } from '../Resource/Helpers/Pagination';
 
 export type ControllerTransition<S extends Schema> = {
-    transition: keyof Omit<S['Transitions'],'create'|'delete'>
+    transition: keyof Omit<S['Transitions'],'create'|'edit'|'delete'>
     auth?: typeof Auth
 }
 
@@ -73,7 +73,11 @@ export function ResourceController<T,S extends Schema>(
         }
 
         async edit(ctx: HttpContextContract) {
-            return resource.edit(this.client, ctx.request.body() as any);
+            const input = {
+                ...ctx.request.body(),
+                id: ctx.params.id
+            } as any;
+            return resource.edit(this.client, input);
         }
                 
         static routes() {

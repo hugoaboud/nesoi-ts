@@ -146,18 +146,16 @@ export class Machine<T, S extends Schema> extends ResourceMachine<T,{
 
     async create(
         client: Client,
-        input: Input<S,'create'>,
-        extra?: Record<string,any>
+        input: Input<S,'create'>
     ): Promise<T> {
-        return super.create(client, input, extra);
+        return super.create(client, input);
     }
 
     async createMany(
         client: Client,
-        inputs: Input<S,'create'>[],
-        extra?: (input: Input<S,'create'>) => Record<string,any>
+        inputs: Input<S,'create'>[]
     ): Promise<T[]> {
-        return super.createMany(client, inputs, extra as any)
+        return super.createMany(client, inputs)
     }
 
     /* Build */

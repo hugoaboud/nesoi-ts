@@ -113,7 +113,8 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
 
     async edit(
         client: Client,
-        input: {id?: number} & Input<S,'edit'>
+        input: {id?: number} & Input<S,'edit'>,
+        parent_id?: number
     ): Promise<void> {
         if (!input.id) {
             await this.create(client, input);
@@ -121,16 +122,24 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
         }
         const obj = await this.readOneFromModel(client, this.$.Model, input.id);
         if (!obj) throw Exception.NotFound(input.id);
+
+        const parent = client.getAction(-1)?.resource as ResourceMachine<any,any>;
+        if (parent && parent_id) {
+            const parent_key = parent.name(true)+'_id';
+            if ((obj as any)[parent_key] !== parent_id)
+                throw Exception.EditSiblingResource(this.alias(), obj.id, parent.alias(), parent_id);
+        }
         await this.runFromModel(client, 'edit', obj, input);
     }
 
     async editMany(
         client: Client,
-        inputs: Input<S,'edit'>[]
+        inputs: Input<S,'edit'>[],
+        parent_id?: number
     ): Promise<void> {
         for (let i in inputs) {
             const input = inputs[i];
-            await this.edit(client, input);
+            await this.edit(client, input, parent_id);
         }
     }
 
@@ -281,6 +290,10 @@ class Exception extends BaseException {
 
     static NotFound(id: number) {
         return new this(`Não encontrado: ${id}`, Status.BADREQUEST, this.code);
+    }
+
+    static EditSiblingResource(alias: string, id: number, parent_alias: string, parent_id: number) {
+        return new this(`${alias} ${id} não pertence a ${parent_alias} ${parent_id}`, Status.BADREQUEST, this.code);
     }
 
 }

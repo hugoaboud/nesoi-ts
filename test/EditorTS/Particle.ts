@@ -21,8 +21,7 @@ export class $Particle extends $.Schema({
 
     Transitions: {
 
-        create: $.Transition({
-            alias: 'Criar',
+        create: $.Transition('Criar',{
             from: 'void',
             to: 'created',
             input: {
@@ -35,8 +34,7 @@ export class $Particle extends $.Schema({
             },
         }),
 
-        purge: $.Transition({
-            alias: 'Expurgar',
+        purge: $.Transition('Expurgar',{
             from: 'created',
             to: 'purged',
             input: {},
@@ -45,8 +43,7 @@ export class $Particle extends $.Schema({
             }
         }),
 
-        delete: $.Transition({
-            alias: 'Deletar',
+        delete: $.Transition('Deletar',{
             from: '*',
             to: 'deleted',
             input: {}
