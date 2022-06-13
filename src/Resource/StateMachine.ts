@@ -286,7 +286,11 @@ export abstract class StateMachine< S extends Schema > {
     ): Promise<void> {
         for (let key in schema) {
             const prop = schema[key] as any as InputProp<any>;
-            if (isEmpty(input[key]) && prop.type !== 'id') continue;
+            
+            if (Array.isArray(input)) {
+                if (isEmpty(input)) continue;
+            }
+            else if (isEmpty(input[key])) continue;
             
             if (input.__validated__ && prop.scope === 'public') {
                 if (prop.members)
