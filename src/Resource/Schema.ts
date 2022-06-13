@@ -8,10 +8,7 @@ import { Hook, State, Transition } from "./StateMachine";
     [ Resource State Schema ]
     Definition of a resource states. */
 
-export type StateSchema = {
-    created: State
-} &
-    Record<string, State>
+export type StateSchema = Record<string, State>
 
 /**
     [ Resource Transition Schema ]
@@ -22,7 +19,7 @@ export type TransitionSchema<
     Model,
     States
 > = {
-    create: Transition<Model,'void','created',any>,
+    create: Transition<Model,'void',keyof States,any>,
     edit?: Transition<Model,keyof States,'.',any>
 } &
     Record<string, Transition<Model,keyof States|'void'|'*',keyof States|'.',any>>
