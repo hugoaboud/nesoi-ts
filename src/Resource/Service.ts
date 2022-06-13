@@ -169,16 +169,20 @@ export class Machine<T, S extends Schema> extends ResourceMachine<T,{
 
     async edit(
         client: Client,
-        input: Input<S,'edit'>
+        input: {id?: number} & Input<S,'edit'>
     ): Promise<void> {
+        if (!input.id) {
+            await this.create(client, input as any);
+            return;
+        }
         const $ = (this.$ as any as Schema);
-        const url = this.route();
+        const url = this.route() + '/' + input.id;
         return $.Service.request(client, Settings.EDIT_VERB, url, undefined, input);
     }
 
     async editMany(
         client: Client,
-        inputs: Input<S,'edit'>[]
+        inputs: ({id?: number} & Input<S,'edit'>)[]
     ): Promise<void> {
         for (let i in inputs) {
             await this.edit(client, inputs[i]);
