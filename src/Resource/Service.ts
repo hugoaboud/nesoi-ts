@@ -142,20 +142,47 @@ export class Machine<T, S extends Schema> extends ResourceMachine<T,{
         return $.Service.request(client, 'post', url, $.Query, { q });
     }
 
-    /* CRUD */
+    /* Create */
 
     async create(
         client: Client,
         input: Input<S,'create'>
     ): Promise<T> {
-        return super.create(client, input);
+        const $ = (this.$ as any as Schema);
+        const url = this.route();
+        return $.Service.request(client, 'post', url, undefined, input);
     }
 
     async createMany(
         client: Client,
         inputs: Input<S,'create'>[]
     ): Promise<T[]> {
-        return super.createMany(client, inputs)
+        const objs = [];
+        for (let i in inputs) {
+            const obj = await this.create(client, inputs[i]);
+            objs.push(obj);
+        }
+        return objs;
+    }
+
+    /* Edit */
+
+    async edit(
+        client: Client,
+        input: Input<S,'edit'>
+    ): Promise<void> {
+        const $ = (this.$ as any as Schema);
+        const url = this.route();
+        return $.Service.request(client, Settings.EDIT_VERB, url, undefined, input);
+    }
+
+    async editMany(
+        client: Client,
+        inputs: Input<S,'edit'>[]
+    ): Promise<void> {
+        for (let i in inputs) {
+            await this.edit(client, inputs[i]);
+        }
     }
 
     /* Build */
