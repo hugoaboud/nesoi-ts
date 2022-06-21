@@ -23,7 +23,7 @@ export abstract class BaseController {
 
     client!: Client
 
-    static $endpoints: Record<string, ControllerEndpoint> = {}
+    static $endpoints: Record<string, ControllerEndpoint>
     static $middlewares: (typeof Middleware)[] = [ LogMiddleware ]
 
     static routes() {
@@ -78,6 +78,7 @@ export abstract class BaseController {
     return function(target: any, key: string) { 
         // Register route
         let controller = (target.constructor as typeof BaseController);
+        if (!controller.$endpoints) controller.$endpoints = {}
         controller.$endpoints[key] = {
             verb,
             path: controller.route+'/'+path,
