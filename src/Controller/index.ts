@@ -27,6 +27,7 @@ export abstract class BaseController {
     static $middlewares: (typeof Middleware)[] = [ LogMiddleware ]
 
     static routes() {
+        if (!this.$endpoints) return;
         Object.keys(this.$endpoints).forEach(key => {
             
             let $route = this.$endpoints[key];
