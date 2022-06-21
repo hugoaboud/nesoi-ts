@@ -5,7 +5,6 @@ import { Verb } from '../Service';
 import Route from '@ioc:Adonis/Core/Route'
 import { Client } from '../Auth/Client';
 import { ResourceController as $ResourceController } from './ResourceController';
-import LogMiddleware from '../Log/LogMiddleware';
 import { Middleware } from '../Middleware';
 
 export interface ControllerEndpoint {
@@ -24,7 +23,7 @@ export abstract class BaseController {
     client!: Client
 
     static $endpoints: Record<string, ControllerEndpoint>
-    static $middlewares: (typeof Middleware)[] = [ LogMiddleware ]
+    static $middlewares: (typeof Middleware)[] = []
 
     static routes() {
         if (!this.$endpoints) return;
@@ -41,6 +40,8 @@ export abstract class BaseController {
             });
 
             route.prefix($route.version)
+            
+            route.middleware('LogMiddleware');
             if ($route.auth) route.middleware($route.auth.name);
 
             this.$middlewares.forEach(middleware => 
@@ -86,7 +87,7 @@ export abstract class BaseController {
             version,
             auth,
             trx,
-            middlewares: [ LogMiddleware ]
+            middlewares: []
         }
         // // Read client from ctx
         // let fn = descriptor.value;
