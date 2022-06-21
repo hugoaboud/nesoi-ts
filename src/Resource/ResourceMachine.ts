@@ -7,7 +7,7 @@ import { ResourceSchemaValidator } from "../Validator/ResourceSchemaValidator";
 import { GraphLink } from "./Graph";
 import { Input } from "./Input";
 import BaseModel from "./Model";
-import { Prop, $ as $Prop } from "./Output";
+import { Prop, $ as $Prop, LambdaProp } from "./Output";
 import { Schema } from "./Schema";
 import { StateMachine } from './StateMachine';
 import { Query, QueryBuilder } from './Helpers/Query';
@@ -173,7 +173,6 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
         for (let key in schema) {
             const prop = schema![key];
             if (prop instanceof Prop) {
-                if (prop.source != 'model') continue;
                 if (prop.async)
                     entity[key] = await prop.fn(obj, prop);
                 else
@@ -187,8 +186,19 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
                     entity[key] = await this.buildLinkSingle(client, obj, prop);
                 continue;
             }
+            else if (typeof prop === 'function') continue;
             entity[key] = {};
             await this.build(client, obj, schema[key] as any, entity[key]);
+        }
+        for (let key in schema) {
+            const prop = schema![key] as LambdaProp<Model<S>>;
+            if (typeof prop !== 'function') continue;
+            if ('then' in prop) {
+                entity[key] = await prop(obj, entity, client);
+            }
+            else {
+                entity[key] = prop(obj, entity, client);
+            }
         }
         this.buildMethods(obj, entity);
         return entity as any;

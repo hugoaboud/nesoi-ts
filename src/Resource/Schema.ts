@@ -1,7 +1,7 @@
 import { GraphLink } from "./Graph";
 import { InputPropBuilder } from "./Input";
 import BaseModel from "./Model";
-import { Prop } from "./Output";
+import { LambdaProp, Prop } from "./Output";
 import { Hook, State, Transition } from "./StateMachine";
 
 /**
@@ -20,7 +20,8 @@ export type TransitionSchema<
     States
 > = {
     create: Transition<Model,'void',keyof States,any>,
-    edit?: Transition<Model,keyof States,'.',any>
+    edit?: Transition<Model,keyof States,'.',any>,
+    delete?: Transition<Model,keyof States,'deleted',any>
 } &
     Record<string, Transition<Model,keyof States|'void'|'*',keyof States|'.',any>>
 
@@ -42,7 +43,7 @@ export type HookSchema<
  */
 
 export interface OutputSchema<Model> {
-    [ name: string]: Prop<Model, any> | GraphLink<any> | OutputSchema<Model >
+    [ name: string]: Prop<Model, any> | LambdaProp<Model> | GraphLink<any> | OutputSchema<Model >
 }
 
 /**

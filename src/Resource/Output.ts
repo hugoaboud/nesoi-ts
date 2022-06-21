@@ -1,5 +1,6 @@
-type PropType = 'boolean'|'int'|'decimal'|'string'|'money'
-type PropSource = 'model'|'entity'
+import { Client } from "../Auth/Client";
+
+type PropType = 'boolean'|'int'|'decimal'|'string'|'money'|'lambda'
 
 /**
    [ Resource Prop ]
@@ -10,7 +11,6 @@ type PropSource = 'model'|'entity'
 export class Prop<Model, T> {    
     constructor(
         public type: PropType,
-        public source: PropSource,
         public prop: keyof Model,
         public fn: (obj: Model, prop: Prop<any,any>) => any,
         public list: boolean = false,
@@ -18,7 +18,7 @@ export class Prop<Model, T> {
     ) {}
 
     array() {
-        const prop = new Prop<Model, T[]>(this.type, this.source, this.prop, this.fn, true);
+        const prop = new Prop<Model, T[]>(this.type, this.prop, this.fn, true);
         return prop;
     }
 }
@@ -29,23 +29,29 @@ export class Prop<Model, T> {
 */
 
 export function $<Model>() {
-    return (prop: keyof Model, source: PropSource = 'model') => ({
-        boolean: new Prop<Model, boolean>('boolean', source, prop, (obj: Model) => {
+    return (prop: keyof Model) => ({
+        boolean: new Prop<Model, boolean>('boolean', prop, (obj: Model) => {
             return obj[prop]
         }),
-        int: new Prop<Model, number>('int', source, prop, (obj: Model, p: Prop<any,any>) => {
+        int: new Prop<Model, number>('int', prop, (obj: Model, p: Prop<any,any>) => {
             if (p.list) return obj[prop];
             return parseInt(obj[prop] as any)
         }),
-        decimal: new Prop<Model, number>('decimal', source, prop, (obj: Model) => {
+        decimal: new Prop<Model, number>('decimal', prop, (obj: Model) => {
             return obj[prop]
         }),
-        string: new Prop<Model, string>('string', source, prop, (obj: Model) => {
+        string: new Prop<Model, string>('string', prop, (obj: Model) => {
             return obj[prop]
         }),
-        money: new Prop<Model, string>('money', source, prop, (obj: Model) => {
+        money: new Prop<Model, string>('money', prop, (obj: Model) => {
             return (obj as any).coin + obj[prop]
         })
-
     })
 }
+
+/**
+   [ Resource Lambda Prop ]
+   Type of an (Output) Lambda Prop.
+*/
+
+export type LambdaProp<Model> = (model: Model, entity: Record<string,any>, client: Client) => any | Promise<any>

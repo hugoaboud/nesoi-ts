@@ -1,4 +1,4 @@
-import { Prop, $ as $Prop } from './Output';
+import { Prop, $ as $Prop, LambdaProp } from './Output';
 import { $ as $InputProp, InputPropBuilder } from './Input';
 import { GraphLink, $ as $GraphLink } from './Graph';
 import { DateTime } from 'luxon'
@@ -16,10 +16,13 @@ export type Model<S extends $Schema> = InstanceType<S['Model']>
     Extract the type from a Prop.
 */
 
+type LambdaPropType<T extends LambdaProp<any>> = ReturnType<T> extends Promise<infer X> ? X : ReturnType<T>
+
 export type PropType<T> =
-    T extends Prop<any, infer X> ? X : {
-        [ k in keyof T]: PropType<T[k] >
-    }
+    T extends Prop<any, infer X> ? X :
+        T extends LambdaProp<any> ? LambdaPropType<T> : {
+            [ k in keyof T]: PropType<T[k] >
+        }
 
 /**
     [ Resource Graph Link Type ]
