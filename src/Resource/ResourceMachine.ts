@@ -12,7 +12,7 @@ import { Schema } from "./Schema";
 import { StateMachine } from './StateMachine';
 import { Query, QueryBuilder } from './Helpers/Query';
 import { ColumnBasedMultiTenancy, MultiTenancy } from './Helpers/MultiTenancy';
-import { Settings } from '../Settings';
+import { Config } from '../Config';
 import { Pagination } from './Helpers/Pagination';
 
 /**
@@ -37,8 +37,8 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
         };
 
         this.multi_tenancy = new ColumnBasedMultiTenancy(
-            Settings.MultiTenancy.COLUMN,
-            Settings.MultiTenancy.USER_KEY
+            Config.get('MultiTenancy').column,
+            Config.get('MultiTenancy').user_key
         );
     }
 

@@ -3,7 +3,7 @@ import { Auth } from '../Auth';
 import ResourceMachine from '../Resource/ResourceMachine';
 import { BaseController, ControllerEndpoint } from '.';
 import { Schema } from '../Resource/Schema';
-import { Settings } from '../Settings';
+import { Config } from '../Config';
 import { QueryBuilder } from '../Resource/Helpers/Query';
 import LogMiddleware from '../Log/LogMiddleware';
 import { Middleware } from '../Middleware';
@@ -94,7 +94,7 @@ export function ResourceController<T,S extends Schema>(
             }
 
             this.$endpoints['query'] = {
-                verb: 'post', path: path + Settings.QUERY_ROUTE,
+                verb: 'post', path: path + Config.get('Routing').query_route,
                 auth, trx: true, version, middlewares: []
             }
 
@@ -112,7 +112,7 @@ export function ResourceController<T,S extends Schema>(
 
             if ('edit' in resource.$.Transitions) {
                 this.$endpoints['edit'] = {
-                    verb: Settings.EDIT_VERB, path: path+'/:id',
+                    verb: Config.get('Routing').edit_verb, path: path+'/:id',
                     auth, trx: true, version, middlewares: []
                 }
             }

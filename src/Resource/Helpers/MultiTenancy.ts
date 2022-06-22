@@ -1,5 +1,5 @@
 import { ModelQueryBuilderContract } from "@ioc:Adonis/Lucid/Orm";
-import { Client, User } from "../../Auth/Client";
+import { Client } from "../../Auth/Client";
 import BaseModel from "../Model";
 
 export abstract class MultiTenancy {
@@ -20,7 +20,7 @@ export class ColumnBasedMultiTenancy {
 
     constructor(
         private column: string,
-        private user_param: keyof User
+        private user_param: string
     ) {}
 
     decorateObjectBeforeSave<T>(
@@ -35,7 +35,7 @@ export class ColumnBasedMultiTenancy {
         client: Client,
         query: ModelQueryBuilderContract<typeof BaseModel, BaseModel>
     ): ModelQueryBuilderContract<typeof BaseModel, BaseModel> {
-        return query.where(this.column, client.user[this.user_param]);
+        return query.where(this.column, (client.user as any)[this.user_param]);
     }
 
 }

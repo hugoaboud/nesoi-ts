@@ -5,7 +5,7 @@ import { OutputSchema } from "./Schema";
 import ResourceMachine from "./ResourceMachine";
 import { PropType } from ".";
 import { QueryBuilder } from "./Helpers/Query";
-import { Settings } from "../Settings";
+import { Config } from "../Config";
 import { CamelToSnakeCase } from "../Util/String";
 
 /* Model */
@@ -138,7 +138,7 @@ export class Machine<T, S extends Schema> extends ResourceMachine<T,{
     protected async runQuery(client: Client, query: QueryBuilder<T>): Promise<T[]> {
         const $ = (this.$ as any as Schema);
         const q = (query as any).toRansack();
-        const url = this.route() + Settings.QUERY_ROUTE;
+        const url = this.route() + Config.get('Routing').query_route;
         return $.Service.request(client, 'post', url, $.Query, { q });
     }
 
@@ -177,7 +177,7 @@ export class Machine<T, S extends Schema> extends ResourceMachine<T,{
         }
         const $ = (this.$ as any as Schema);
         const url = this.route() + '/' + input.id;
-        return $.Service.request(client, Settings.EDIT_VERB, url, undefined, input);
+        return $.Service.request(client, Config.get('Routing').edit_verb, url, undefined, input);
     }
 
     async editMany(
