@@ -44,7 +44,7 @@ export class $Particle extends $.Schema({
         }),
 
         delete: $.Transition('Deletar',{
-            from: '*',
+            from: ['created','purged'],
             to: 'deleted',
             input: {}
         })

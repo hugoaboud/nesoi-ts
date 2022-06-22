@@ -27,7 +27,7 @@ export class ResourceSchemaValidator {
     private static hasMonetaryProp(output: Schema['Output']) {
         for (let key in output) {
             const prop = output[key];
-            if (prop instanceof GraphLink) continue;
+            if (prop instanceof GraphLink || typeof prop === 'function' ) continue;
             if (!prop.fn) {
                 if (this.hasMonetaryProp(prop as Schema['Output']))
                     return true;
@@ -47,7 +47,7 @@ export class ResourceSchemaValidator {
                 links.push(prop);
                 continue;
             }
-            if (!(prop instanceof Prop)) {
+            if (!(prop instanceof Prop || typeof prop === 'function')) {
                 links.push(...this.getGraphLinks(prop))
             }
         }

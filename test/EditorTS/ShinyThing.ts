@@ -12,12 +12,13 @@ class $ShinyThing extends $.Schema({
     Alias: 'Coisa Brilhante',
 
     Output: {
-        name:           o('name').string,
+        name:           o('name'),
         price:          o('price').money,
         decoration: {
             color:      o('color').int,
             shininess:  o('shininess').decimal
-        }
+        },
+        discount: (model) => model.price * 0.1
     },
 
     States: {
@@ -94,3 +95,6 @@ class $ShinyThing extends $.Schema({
 type ShinyThing = $.Type<$ShinyThing>;
 const ShinyThing = new $.Machine<ShinyThing, $ShinyThing>($ShinyThing.$);
 export default ShinyThing;
+
+let a = {} as ShinyThing;
+a.discount
