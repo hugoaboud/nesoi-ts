@@ -2,7 +2,7 @@ import { validator, schema, TypedSchema, ParsedTypedSchema } from '@ioc:Adonis/C
 import { InputProp, InputPropBuilder } from "./Input"
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { DateTime } from 'luxon';
-import { InputPropType, Model } from ".";
+import { InputPropType, Model, PropType } from ".";
 import { isEmpty } from '../Validator/ResourceSchemaValidator';
 import { Client } from '../Auth/Client';
 import { InputSchema, Schema, TransitionSchema } from './Schema';
@@ -159,6 +159,19 @@ export type TransitionCallback<
     from: string
 ) =>
     Promise<Output>
+
+/**
+ * Resource Entity Type
+ */
+
+export type Entity<S extends Schema> = 
+{ 
+    id: number
+    created_at: DateTime
+    updated_at: DateTime
+} & 
+{ [k in keyof S['Output']]: PropType<S['Output'][k]> } &
+Omit<{ [k in keyof S['Transitions']]: Method<S['Transitions'][k]> }, 'create'>
 
 /**
     [State Machine]

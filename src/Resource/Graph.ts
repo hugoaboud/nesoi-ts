@@ -1,14 +1,16 @@
 import ResourceMachine from './ResourceMachine'
+import { Entity } from './StateMachine'
 
 /**
    [ Resource Graph Link ]
    A link to another resource, created at the Output Schema.
 */
 
-export class GraphLink<R extends ResourceMachine<any,any>> {
+//@ts-ignore
+export class GraphLink<Type> {
     
     constructor(
-        public resource: R,
+        public resource: ResourceMachine<any,any>,
         public many = false
     ) {}
 
@@ -22,8 +24,8 @@ export class GraphLink<R extends ResourceMachine<any,any>> {
 export function $<R extends ResourceMachine<any,any>>(resource: R) {
     
     return {
-        child: new GraphLink(resource),
-        children: new GraphLink(resource, true)
+        child: new GraphLink<Entity<R['$']>>(resource),
+        children: new GraphLink<Entity<R['$']>[]>(resource, true)
     }
 
 }

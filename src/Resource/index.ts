@@ -1,10 +1,9 @@
 import { Prop, $ as $Prop, LambdaProp } from './Output';
 import { $ as $InputProp, InputPropBuilder } from './Input';
 import { GraphLink, $ as $GraphLink } from './Graph';
-import { DateTime } from 'luxon'
 import { Schema as $Schema } from "./Schema";
 import * as Service from "./Service";
-import { Method, Transition as $Transition } from "./StateMachine";
+import { Entity, Transition as $Transition } from "./StateMachine";
 import ResourceMachine from "./ResourceMachine";
 
 /** Type Helper: Extract Model from Schema */
@@ -20,17 +19,10 @@ type LambdaPropType<T extends LambdaProp<any>> = ReturnType<T> extends Promise<i
 
 export type PropType<T> =
     T extends Prop<any, infer X> ? X :
-        T extends LambdaProp<any> ? LambdaPropType<T> : {
-            [ k in keyof T]: PropType<T[k] >
+        T extends LambdaProp<any> ? LambdaPropType<T> : 
+            T extends GraphLink<infer Y> ? Y : {
+                [ k in keyof T]: PropType<T[k]>
         }
-
-/**
-    [ Resource Graph Link Type ]
-    Extract the type from a Graph Link.
-*/
-
-export type GraphLinkType<T> =
-    T extends GraphLink<infer X> ? X : never
 
 /**
     [ Resource Input Prop Type ]
@@ -39,19 +31,6 @@ export type GraphLinkType<T> =
 
 export type InputPropType<T> =
     T extends InputPropBuilder<infer X, any> ? X : never
-
-/**
-    [ Resource Entity Type ]
-*/
-
-type $Type<S extends $Schema> = 
-    { 
-        id: number
-        created_at: DateTime
-        updated_at: DateTime
-    } & 
-    { [k in keyof S['Output']]: PropType<S['Output'][k]> } &
-    Omit<{ [k in keyof S['Transitions']]: Method<S['Transitions'][k]> }, 'create'>
 
 /**
     [ Resource Schema Interface ]
@@ -64,7 +43,7 @@ export namespace $ {
     export const Transition = $Transition
     export const Schema = $Schema
     export const Machine = ResourceMachine;
-    export type Type<S extends $Schema> = $Type<S>
+    export type Type<S extends $Schema> = Entity<S>
 }
 
 export namespace $Service {

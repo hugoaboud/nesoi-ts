@@ -9,7 +9,7 @@ export class Config {
     static Default = {
         
         Routing: {
-            query_route: '/filters',
+            query_route: '/query',
             edit_verb: 'patch' as Verb,
         },
         MultiTenancy: {
