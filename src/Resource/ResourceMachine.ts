@@ -61,6 +61,12 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
         return this.build(client, obj);
     }
 
+    async readOneModel(client: Client, id: number): Promise<Model<S>> {
+        const obj = await this.readOneFromModel(client, this.$.Model, id);
+        if (!obj) throw Exception.NotFound(id);
+        return obj;
+    }
+
     async readMany(client: Client, ids: number[]): Promise<T[]> {
         if (!ids.length) return [];
         return this.query(client).rule('id','in',ids).run();
