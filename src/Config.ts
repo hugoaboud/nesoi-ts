@@ -11,6 +11,10 @@ export class Config {
         Routing: {
             query_route: '/query',
             edit_verb: 'patch' as Verb,
+            suffix: undefined as undefined | string
+        },
+        Machine: {
+            delete_on_edit_flag: '_destroy'
         },
         MultiTenancy: {
             column: 'created_by',

@@ -6,7 +6,8 @@ export default class ZeroAuth extends Auth {
     async auth(): Promise<Client> {
         return new Promise(resolve => {
             const user = {
-                id: 0
+                id: 0,
+                company_id: 0
             } as User;
             resolve(new Client(user));
         })

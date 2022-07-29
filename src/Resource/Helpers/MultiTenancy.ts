@@ -9,10 +9,10 @@ export abstract class MultiTenancy {
         query: T
     ): T
 
-    abstract decorateReadQuery(
+    abstract decorateReadQuery<Model extends typeof BaseModel>(
         client: Client,
-        query: ModelQueryBuilderContract<typeof BaseModel, BaseModel>
-    ): ModelQueryBuilderContract<typeof BaseModel, BaseModel>
+        query: ModelQueryBuilderContract<Model, InstanceType<Model>>
+    ): ModelQueryBuilderContract<Model, InstanceType<Model>>
 
 }
 
@@ -31,10 +31,10 @@ export class ColumnBasedMultiTenancy {
         return obj;
     }
 
-    decorateReadQuery(
+    decorateReadQuery<Model extends typeof BaseModel>(
         client: Client,
-        query: ModelQueryBuilderContract<typeof BaseModel, BaseModel>
-    ): ModelQueryBuilderContract<typeof BaseModel, BaseModel> {
+        query: ModelQueryBuilderContract<Model, InstanceType<Model>>
+    ): ModelQueryBuilderContract<Model, InstanceType<Model>> {
         return query.where(this.column, (client.user as any)[this.user_param]);
     }
 

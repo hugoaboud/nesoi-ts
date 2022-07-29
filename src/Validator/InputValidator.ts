@@ -1,20 +1,64 @@
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
-import { schema, rules, TypedSchema } from '@ioc:Adonis/Core/Validator'
-import { InputProp } from '../Resource/Input';
-import { InputSchema } from "../Resource/Schema";
+import { validator, rules, schema, TypedSchema, ParsedTypedSchema } from '@ioc:Adonis/Core/Validator'
+import { InputSchema } from 'src/Resource/Types/Schema';
+import { InputPropT } from '../Resource/Props/Input';
 import { Status } from '../Service';
+
+const RuleMessage = {
+    required: 'é requerido',
+    requiredWhen: 'é requerido',
+    requiredIfNotExists: 'é requerido',
+    requiredIfExists: 'é requerido',
+    object: 'não é um objeto',
+    array: 'não é um array',
+    string: 'não é uma string',
+    number: 'não é um número',
+    enum: 'não possui valor válido. Opções: ',
+    enumSet: 'possui um valor inválido. Opções: ',
+    boolean: 'não é um booleano',
+    date: 'não é uma data'
+} as Record<string,string>;
 
 /** 
     [Resource Input Validator]
     Build AdonisJS validator from Input Schemas.
 */
 
-export abstract class InputValidator {
+export class InputValidator {
+
+    schema: ParsedTypedSchema<TypedSchema>
+    messages: Record<string,any>
+
+    constructor(
+        input: InputSchema
+    ) {
+        this.messages = {
+            '*': (field:string, rule: string, _ptr:any, options:Record<string,any>) => {
+                const prop = input[field] as any as InputPropT | undefined 
+                const alias = prop?.alias || field
+                const options_str = (rule === 'enum' || rule === 'enumSet') ? options.choices.toString() : ''
+                rule = RuleMessage[rule] || rule
+                return alias + ' ' + rule + options_str
+            },
+            'file.size': 'O arquivo deve ser menor do que {{ options.size }}',
+            'file.extname': 'Extensão inválida. Permitidas: {{ options.extnames }}'
+        }
+        this.schema = schema.create(InputValidator.fromSchema(input))
+    }
+
+    async validate(data: Record<string, any>) {
+        return validator.validate({
+            schema: this.schema,
+            data,
+            //@ts-ignore
+            messages: this.messages
+        })
+    }
 
     static fromSchema(input: InputSchema): TypedSchema {
-        input = JSON.parse(JSON.stringify(input));
+        input = Object.assign({}, input);
         Object.keys(input).forEach(k => {
-            let prop = input[k] as any as InputProp<any>;
+            let prop = input[k] as any as InputPropT;
             this.checkProp(k, input[k] as any);
             let validator = this.fromProp(input[k] as any) as any;
             if (prop.members) {
@@ -29,7 +73,7 @@ export abstract class InputValidator {
         return input as any;
     }
 
-    private static checkProp(name: string, prop: InputProp<any>): void {
+    private static checkProp(name: string, prop: InputPropT): void {
         if (prop.type === 'id') {
             if (!prop.list && !name.endsWith('_id'))
                 throw Exception.InvalidIDPropName(name);
@@ -38,7 +82,7 @@ export abstract class InputValidator {
         }
     }
 
-    private static fromProp(prop: InputProp<any>): Record<string,any> {
+    private static fromProp(prop: InputPropT): Record<string,any> {
         const type = {
             int: 'number',
             float: 'number',
@@ -49,11 +93,17 @@ export abstract class InputValidator {
             date: 'date',
             datetime: 'date',
             object: 'object',
-            child: 'object',
+            transition: 'object',
             id: 'number'
         }[prop.type];
         
-        let validator = prop.list ? schema.array : (schema as any)[type];
+        let p = type;
+        if (prop.list) {
+            if (p === 'enum') p = 'enumSet'
+            else p = 'array'
+        }
+
+        let validator = (schema as any)[p];
 
         let requiredWhen = []
         if (typeof prop.required === 'object')
@@ -65,7 +115,6 @@ export abstract class InputValidator {
                 requiredWhen.push(rules.requiredWhen('__scope__', 'in', ['private']))
         }
 
-
         if (prop.required === false || requiredWhen.length) {
             if (type === 'enum') validator = validator.optional(prop.options, requiredWhen);
             else if (type === 'date') validator = validator.optional(undefined, requiredWhen);
@@ -76,7 +125,7 @@ export abstract class InputValidator {
             else validator = validator();
         }
 
-        if (prop.list && prop.type !== 'child') {
+        if (prop.list && !prop.members && prop.type !== 'enum') {
             validator = validator.members((schema as any)[type]())
         }
 

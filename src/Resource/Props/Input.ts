@@ -1,28 +1,17 @@
-import BaseModel from './Model'
-import { $ as $Resource, InputPropType } from '.'
-import { InputSchema, Schema } from './Schema'
-import { StateMachine, TransitionInput } from './StateMachine'
-import ResourceMachine from './ResourceMachine'
-import { Client } from '../Auth/Client'
-import { isEmpty } from '../Validator/ResourceSchemaValidator'
-
-/**
-    [ Resource Input ]
-    Input type for a given transition.    
- */
-
-export type Input<
-    S extends Schema,
-    T extends keyof S['Transitions']
-> = 
-    TransitionInput<S['Transitions'][T]
->
+import BaseModel from '../Model'
+import ResourceMachine from '../Machines/ResourceMachine'
+import { Client } from '../../Auth/Client'
+import { isEmpty } from '../../Validator/ResourceSchemaValidator'
+import { InputSchema } from '../Types/Schema'
+import { StateMachine } from '../Machines/StateMachine'
+import { InputPropType } from '../Types/Entity'
+import { Entity, Input } from '..'
 
 /*
    Definition Types
 */
 
-type InputType = 'boolean'|'int'|'float'|'string'|'date'|'datetime'|'object'|'enum'|'child'|'id'
+type InputType = 'boolean'|'int'|'float'|'string'|'date'|'datetime'|'object'|'enum'|'transition'|'id'
 type InputScope = 'public'|'protected'|'private'
 type InputRequiredWhen = {
     param: string
@@ -30,42 +19,22 @@ type InputRequiredWhen = {
 }
 type InputRule = {
     scope: 'runtime' | 'database' | 'service'
-    fn: (input: Record<string, any>, key: string, machine: StateMachine<any>, prop: InputProp<any>, client: Client) => Promise<boolean>,
+    fn: (input: Record<string, any>, key: string, machine: StateMachine<any,any>, prop: InputPropT, client: Client) => Promise<boolean>,
     msg: (prop: string) => string
-}
-
-/**
-   [ Resource Input Prop ]
-   Type of an Input Prop built by the builder.
-*/
-export type InputProp<T> = {
-    name: string
-    required?: boolean | {
-        param: string
-        value: string | number | boolean
-    }
-    default_value?: T
-    rules: InputRule[]
-    scope: InputScope
-    alias: string
-    type: InputType
-    list?: boolean
-    members?: InputSchema
-    options?: string[]
-    child?: ResourceMachine<any,any>
 }
 
 /**
    [ Resource Input Prop Builder ]
    Build an Input Prop by chaining rules.
 */
-export class InputPropBuilder<T,L> {
+export class InputProp<T,L> {
     
     protected name!: string
     protected required?: boolean | InputRequiredWhen = true
     protected default_value?: T
     protected rules: InputRule[] = []
     protected scope: InputScope = 'public';
+    protected log = true;
 
     constructor(
         protected alias: string,
@@ -84,8 +53,13 @@ export class InputPropBuilder<T,L> {
 
     
     array() {
-        let prop = new InputPropBuilder<T[], L extends never ? never : L[]>(this.alias, this.type, true, this.members, this.options, this.child);
+        let prop = new InputProp<T[], L extends never ? never : L[]>(this.alias, this.type, true, this.members, this.options, this.child);
         return prop;
+    }
+
+    dontLog() {
+        this.log = false;
+        return this;
     }
 
     /* Optional Fields */
@@ -96,12 +70,12 @@ export class InputPropBuilder<T,L> {
         return this;        
     }
     optional() {
-        let prop = new InputPropBuilder<T|undefined, L extends never ? never : L|undefined>(this.alias, this.type, this.list, this.members, this.options, this.child);
+        let prop = new InputProp<T|undefined, L extends never ? never : L|undefined>(this.alias, this.type, this.list, this.members, this.options, this.child);
         prop.required = false;
         return prop;
     }
     requiredIf(param: string, value: string|boolean|number = true) {
-        let prop = new InputPropBuilder<T|undefined, L extends never ? never : L|undefined>(this.alias, this.type, this.list, this.members, this.options, this.child);
+        let prop = new InputProp<T|undefined, L extends never ? never : L|undefined>(this.alias, this.type, this.list, this.members, this.options, this.child);
         prop.required = { param, value };
         return prop;
     }
@@ -166,12 +140,17 @@ export class InputPropBuilder<T,L> {
 
     /* Database Rules */
     
-    noDuplicate(column: string) {
+    noDuplicate(column: string | string[]) {
+        const cols = Array.isArray(column) ? column : [column];
         this.rules.push({
             scope: 'database',
-            fn: (async (input: Record<string,any>, k: string, machine: StateMachine<any>) => {
-                const duplicate = await (machine.$.Model as typeof BaseModel).findBy(column, input[k]);
-                return duplicate == null;
+            fn: (async (input: Record<string,any>, k: string, machine: StateMachine<any,any>, _:InputProp<any,any>, client: Client) => {
+                const model = machine.$.Model as typeof BaseModel;
+                let entries = await model.readOneGroup(client, cols[0], input[k]);
+                cols.forEach(col => {
+                    entries = entries.filter((e:any) => e[col] === input[col])
+                })
+                return entries.length == 0;
             }) as any,
             msg: (prop: string) => `${prop} já existe`
         })
@@ -183,10 +162,13 @@ export class InputPropBuilder<T,L> {
     private link(scope: 'database'|'service') {
         this.rules.push({
             scope,
-            fn: (async (input: Record<string,any>, k: string, _: StateMachine<any>, prop:InputProp<any>, client: Client) => {
+            fn: (async (input: Record<string,any>, k: string, _: StateMachine<any,any>, prop:InputProp<any,any>, client: Client) => {
                 if (isEmpty(input[k])) return true;
-                const child = await prop.child!.readOne(client, input[k]);
                 const name = '$' + k.replace(/_id$/,'');
+                if (input.__scope__ === 'protected' || input.__scope__ === 'private') {
+                    if (name in input) return true;
+                }
+                const child = await prop.child!.readOne(client, input[k]);
                 input[name] = child;
                 return true;
             }) as any,
@@ -197,12 +179,15 @@ export class InputPropBuilder<T,L> {
     private links(scope: 'database'|'service') {
         this.rules.push({
             scope,
-            fn: (async (input: Record<string,any>, k: string, _: StateMachine<any>, prop:InputProp<any>, client: Client) => {
+            fn: (async (input: Record<string,any>, k: string, _: StateMachine<any,any>, prop:InputProp<any,any>, client: Client) => {
                 if (isEmpty(input[k])) return true;
-                const children = await prop.child!.readMany(client, input[k]);
                 let name = '$' + k.replace(/_ids$/,'');
                 if (name.endsWith('y')) name.replace(/y$/,'ies');
                 else name += 's';
+                if (input.__scope__ === 'protected' || input.__scope__ === 'private') {
+                    if (name in input) return true;
+                }
+                const children = await prop.child!.readMany(client, input[k]);
                 input[name] = children;
                 return children.length === input[k].length;
             }) as any,
@@ -218,45 +203,72 @@ export class InputPropBuilder<T,L> {
 
 export function $(alias: string) {
     return {
-        boolean: new InputPropBuilder<boolean, never>(
+        boolean: new InputProp<boolean, never>(
             alias, 'boolean'
         ),
-        int: new InputPropBuilder<number, never>(
+        int: new InputProp<number, never>(
             alias, 'int'
         ),
-        float: new InputPropBuilder<number, never>(
+        float: new InputProp<number, never>(
             alias, 'float'
         ),
-        string: new InputPropBuilder<string, never>(
+        string: new InputProp<string, never>(
             alias, 'string'
         ),
-        date: new InputPropBuilder<string, never>(
+        date: new InputProp<string, never>(
             alias, 'date'
         ),
-        datetime: new InputPropBuilder<string, never>(
+        datetime: new InputProp<string, never>(
             alias, 'datetime'
         ),
         id: <R extends ResourceMachine<any,any>>
             (resource: R) =>
-                new InputPropBuilder<number, $Resource.Type<R['$']>>(
+                new InputProp<number, Entity<R>>(
                     alias, 'id', false,
                     undefined, undefined, resource
                 ),
-        object: <T extends InputSchema>
-            (members: T) =>
-                new InputPropBuilder<{[k in keyof T]: InputPropType<T[k]>}, never>(
-                    alias, 'object', false, members
-                ),
         enum: <T extends readonly string[]>
             (options: T) =>
-                new InputPropBuilder<T[number], never>(
+                new InputProp<T[number], never>(
                     alias, 'enum', false, undefined, options
                 ),
-        child: <R extends ResourceMachine<any,any>, T extends keyof R['$']['Transitions']>
+        object: <T extends InputSchema>
+            (members: T) =>
+                new InputProp<{[k in keyof T]: InputPropType<T[k]>}, never>(
+                    alias, 'object', false, members
+                ),
+        resource: <R extends ResourceMachine<any,any>>
+            (_: R) =>
+                new InputProp<Entity<R>, Entity<R>>(
+                    alias, 'object', false, {}
+                ),
+        transition: <R extends ResourceMachine<any,any>, T extends keyof R['$']['Transitions']>
             (resource: R, transition: T) =>
-                new InputPropBuilder<Input<R['$'],T>, never>(
-                    alias, 'child', false,
+                new InputProp<Input<R['$'],T>, never>(
+                    alias, 'transition', false,
                     resource.$.Transitions[transition].input, undefined, resource
                 )
     }
+}
+
+/**
+   [ Resource Input Prop ]
+   Type of an Input Prop built by the builder.
+*/
+export type InputPropT = {
+    name: string
+    required?: boolean | {
+        param: string
+        value: string | number | boolean
+    }
+    default_value?: any
+    rules: InputRule[]
+    scope: InputScope
+    alias: string
+    type: InputType
+    list?: boolean
+    members?: InputSchema
+    options?: string[]
+    child?: ResourceMachine<any,any>
+    log: boolean
 }

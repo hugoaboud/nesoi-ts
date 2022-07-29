@@ -18,9 +18,9 @@ export class Pagination {
         if (per_page) this.per_page = per_page;
     }
 
-    decorateReadQuery(
-        query: ModelQueryBuilderContract<typeof BaseModel, BaseModel>
-    ): ModelQueryBuilderContract<typeof BaseModel, BaseModel> {
+    decorateReadQuery<Model extends typeof BaseModel>(
+        query: ModelQueryBuilderContract<Model, InstanceType<Model>>
+    ): ModelQueryBuilderContract<Model, InstanceType<Model>> {
 
         query = query.limit(this.per_page).offset((this.page-1)*this.per_page);
         if (this.order_by) {

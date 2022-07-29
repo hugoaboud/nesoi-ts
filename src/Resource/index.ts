@@ -1,57 +1,49 @@
-import { Prop, $ as $Prop, LambdaProp } from './Output';
-import { $ as $InputProp, InputPropBuilder } from './Input';
-import { GraphLink, $ as $GraphLink } from './Graph';
-import { Schema as $Schema } from "./Schema";
-import * as Service from "./Service";
-import { Entity, Transition as $Transition } from "./StateMachine";
-import ResourceMachine from "./ResourceMachine";
+import { Schema as $Schema } from './Types/Schema'
+import { Entity as $Entity, Input as $Input } from './Types/Entity'
+import { $ as $Prop } from './Props/Output'
+import { $ as $InputProp } from './Props/Input'
+import { $ as $GraphLink } from './Props/Graph'
+import { Transition as $Transition } from './Types/Transition'
+import { ResourceMachine as $ResourceMachine, ServiceMachine as $ServiceMachine } from './Types/Machine'
+import * as Service from './Types/Service'
+import ResourceMachine from './Machines/ResourceMachine'
+import ServiceMachine from './Machines/ServiceMachine'
 
-/** Type Helper: Extract Model from Schema */
+export type Input<
+    S extends $Schema | Service.Schema,
+    T extends keyof S['Transitions']
+> =    
+    S extends $Schema ? $Input<S, T> : 
+        S extends Service.Schema ? Service.Input<S,T> : never
 
-export type Model<S extends $Schema> = InstanceType<S['Model']>
+export type Entity<
+    R extends ResourceMachine<any,any>
+> =
+    R extends ServiceMachine<any,any> ? Service.Entity<R['$']> : $Entity<R['$']>
 
-/**
-    [ Resource Prop Type ]
-    Extract the type from a Prop.
-*/
-
-type LambdaPropType<T extends LambdaProp<any>> = ReturnType<T> extends Promise<infer X> ? X : ReturnType<T>
-
-export type PropType<T> =
-    T extends Prop<any, infer X> ? X :
-        T extends LambdaProp<any> ? LambdaPropType<T> : 
-            T extends GraphLink<infer Y> ? Y : {
-                [ k in keyof T]: PropType<T[k]>
-        }
-
-/**
-    [ Resource Input Prop Type ]
-    Extract the type from a Input Prop.
-*/
-
-export type InputPropType<T> =
-    T extends InputPropBuilder<infer X, any> ? X : never
-
-/**
-    [ Resource Schema Interface ]
- */
 export namespace $ {
-
+    
     export const Prop = $Prop
     export const GraphLink = $GraphLink
     export const InputProp = $InputProp
+    
     export const Transition = $Transition
-    export const Schema = $Schema
-    export const Machine = ResourceMachine;
-    export type Type<S extends $Schema> = Entity<S>
+    
+    export type Type<S extends ResourceMachine<any,any>> = $Entity<S['$']>
+    export const Machine = $ResourceMachine;
 }
 
 export namespace $Service {
-    export const Prop = $Prop
-    export const GraphLink = $GraphLink
+
     export type BaseModel = Service.BaseModel
-    export const Schema = Service.Schema
+
+    export const Prop = $Prop
+    export const InputProp = $InputProp
+    export const GraphLink = $GraphLink
+    
     export const Transition = Service.Transition
-    export const Machine = Service.Machine;
-    export type Type<S extends Service.Schema> = Service.Type<S>
+    export const LambdaTransition = Service.LambdaTransition
+    
+    export type Type<S extends ServiceMachine<any,any>> = Service.Entity<S['$']>
+    export const Machine = $ServiceMachine;
 }

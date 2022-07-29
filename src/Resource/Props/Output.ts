@@ -1,6 +1,6 @@
-import { Client } from "../Auth/Client";
+import { Client } from "src/Auth/Client";
 
-type PropType = 'boolean'|'int'|'decimal'|'string'|'money'|'lambda'
+type PropType = 'boolean'|'int'|'decimal'|'string'|'money'|'lambda'|'object'
 
 /**
    [ Resource Prop ]
@@ -45,7 +45,12 @@ export function $<Model>() {
         }),
         money: new Prop<Model, string>('money', prop, (obj: Model) => {
             return (obj as any).coin + obj[prop]
-        })
+        }),
+        object: <T extends Record<string,any>>() => {
+            return new Prop<Model, T>('object', prop, (obj: Model) => {
+                return obj[prop]
+            })
+        },
     })
 }
 
@@ -54,4 +59,4 @@ export function $<Model>() {
    Type of an (Output) Lambda Prop.
 */
 
-export type LambdaProp<Model> = (model: Model, entity: Record<string,any>, client: Client) => any | Promise<any>
+export type LambdaProp<Model> = (obj: Model, args: { entity: Record<string,any>, client: Client }) => any | Promise<any>

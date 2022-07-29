@@ -1,10 +1,10 @@
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { Status } from "../Service";
-import { GraphLink } from "../Resource/Graph";
-import { Prop } from "../Resource/Output";
+import { GraphLink } from "../Resource/Props/Graph";
+import { Prop } from "../Resource/Props/Output";
 import BaseModel from "../Resource/Model";
-import { Schema } from "../Resource/Schema";
-import ResourceMachine from '../Resource/ResourceMachine';
+import { Schema } from "../Resource/Types/Schema";
+import ResourceMachine from '../Resource/Machines/ResourceMachine';
 
 export function isEmpty(val: any): boolean {
     return (val == null || val.length == 0)
@@ -65,12 +65,12 @@ export class ResourceSchemaValidator {
         link: GraphLink<R>
     ) {
         if (link.many) {
-            const fkey = resource.name(true) + '_id';
+            const fkey = link.fkey || resource.name('lower_snake') + '_id';
             if (!link.resource.$.Model.$hasColumn(fkey))
                 throw Exception.NoFKeyForChildrenLink(fkey);
         }
         else {
-            const fkey = link.resource.name(true) + '_id';
+            const fkey = link.fkey!;
             if (!model.$hasColumn(fkey))
                 throw Exception.NoFKeyForChildLink(fkey);
         }

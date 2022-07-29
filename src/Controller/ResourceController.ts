@@ -1,16 +1,15 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { Auth } from '../Auth';
-import ResourceMachine from '../Resource/ResourceMachine';
+import ResourceMachine from '../Resource/Machines/ResourceMachine';
 import { BaseController, ControllerEndpoint } from '.';
-import { Schema } from '../Resource/Schema';
 import { Config } from '../Config';
 import { QueryBuilder } from '../Resource/Helpers/Query';
-import LogMiddleware from '../Log/LogMiddleware';
 import { Middleware } from '../Middleware';
 import { Pagination } from '../Resource/Helpers/Pagination';
+import { Schema } from 'src/Resource/Types/Schema';
 
 export type ControllerTransition<S extends Schema> = {
-    transition: keyof Omit<S['Transitions'],'create'|'edit'|'delete'>
+    transition: keyof S['Transitions']
     auth?: typeof Auth
 }
 
@@ -29,7 +28,7 @@ export function ResourceController<T,S extends Schema>(
     let c = class extends BaseController {
         
         static $endpoints: Record<string, ControllerEndpoint> = {}
-        static $middlewares:(typeof Middleware)[] = [ LogMiddleware ]
+        static $middlewares:(typeof Middleware)[] = []
         static route = base
         
         pagination?: Pagination
@@ -69,7 +68,7 @@ export function ResourceController<T,S extends Schema>(
 
         async query(ctx: HttpContextContract) {
             const body = ctx.request.body();
-            return QueryBuilder.fromRansack(this.client, resource, body.q).run();
+            return QueryBuilder.fromRansack(this.client, resource, body.q).all();
         }
 
         async edit(ctx: HttpContextContract) {
@@ -98,28 +97,42 @@ export function ResourceController<T,S extends Schema>(
                 auth, trx: true, version, middlewares: []
             }
 
-            this.$endpoints['create'] = {
-                verb: 'post', path,
-                auth, trx: true, version, middlewares: []
-            }
+            const transition_keys = transitions.map(t => t.transition);
 
-            if ('delete' in resource.$.Transitions) {
+            if (
+                transition_keys.includes('create')
+            ) {
+                this.$endpoints['create'] = {
+                    verb: 'post', path,
+                    auth, trx: true, version, middlewares: []
+                }
+            }
+            
+            if (
+                transition_keys.includes('edit') &&
+                'edit' in resource.$.Transitions
+            ) {
+                this.$endpoints['edit'] = {
+                    verb: Config.get('Routing').edit_verb, path: path+'/:id',
+                    auth, trx: true, version, middlewares: []
+                }
+            }
+            
+            if (
+                transition_keys.includes('delete') &&
+                'delete' in resource.$.Transitions
+            ) {
                 this.$endpoints['delete'] = {
                     verb: 'delete', path: path+'/:id',
                     auth, trx: true, version, middlewares: []
                 }
             }
 
-            if ('edit' in resource.$.Transitions) {
-                this.$endpoints['edit'] = {
-                    verb: Config.get('Routing').edit_verb, path: path+'/:id',
-                    auth, trx: true, version, middlewares: []
-                }
-            }
-
             transitions.forEach(t => {
                 const t_name = t.transition as string;
-                const t_path = path+'/'+t.transition+'/:id';
+                if (t_name === 'create' || t_name === 'edit' || t_name === 'delete') return;
+                
+                const t_path = path+'/:id/'+t_name
                 const t_auth = t.auth || auth;
                 
                 this.$endpoints[t_name] = {

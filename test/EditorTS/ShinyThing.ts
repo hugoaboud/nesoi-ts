@@ -93,8 +93,5 @@ class $ShinyThing extends $.Schema({
 }){}
 
 type ShinyThing = $.Type<$ShinyThing>;
-const ShinyThing = new $.Machine<ShinyThing, $ShinyThing>($ShinyThing.$);
+const ShinyThing = new $.Machine($ShinyThing.$);
 export default ShinyThing;
-
-let a = {} as ShinyThing;
-a.discount

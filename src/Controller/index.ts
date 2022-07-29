@@ -6,6 +6,7 @@ import Route from '@ioc:Adonis/Core/Route'
 import { Client } from '../Auth/Client';
 import { ResourceController as $ResourceController } from './ResourceController';
 import { Middleware } from '../Middleware';
+import { Config } from '../Config';
 
 export interface ControllerEndpoint {
     verb: Verb
@@ -25,34 +26,44 @@ export abstract class BaseController {
     static $endpoints: Record<string, ControllerEndpoint>
     static $middlewares: (typeof Middleware)[] = []
 
+    static makeRoute(key: string, suffix?: string) {
+
+        let schema = this.$endpoints[key];
+
+        const method = async (ctx: HttpContextContract) => {
+            const path = process.cwd()+'/app/Controllers/Http/'+this.name;
+            const { default: Controller } = await import(path);
+            const controller = new Controller() as BaseController;
+            return controller.guard(ctx, schema.trx, (controller as any)[key]);
+        }
+
+        const path = schema.path + (suffix || '')
+        const route = Route[schema.verb](path, method);
+
+        route.prefix(schema.version)
+            
+        route.middleware('LogMiddleware');
+        if (schema.auth) route.middleware(schema.auth.name);
+        
+        this.$middlewares.forEach(middleware => 
+            route.middleware(middleware.name))
+        if (schema.middlewares)
+            schema.middlewares.forEach(m => route.middleware(m.name))
+
+        if (schema.path.endsWith(':id'))
+            route.where('id', IdMatcher)
+    } 
+
     static routes() {
         if (!this.$endpoints) return;
+
+        const suffix = Config.get('Routing').suffix;
+
         Object.keys(this.$endpoints).forEach(key => {
-            
-            let $route = this.$endpoints[key];
-            // let route = Route[$route.verb]($route.path, this.name+'.'+key);
-            let route = Route[$route.verb]($route.path, async ctx => {
-                const path = process.cwd()+'/app/Controllers/Http/'+this.name;
-                const { default: Controller } = await import(path);
-                const controller = new Controller() as BaseController;
-                
-                return controller.guard(ctx, $route.trx, (controller as any)[key]);
-            });
-
-            route.prefix($route.version)
-            
-            route.middleware('LogMiddleware');
-            if ($route.auth) route.middleware($route.auth.name);
-
-            this.$middlewares.forEach(middleware => 
-                route.middleware(middleware.name))
-
-            if ($route.middlewares)
-                $route.middlewares.forEach(m => route.middleware(m.name))
-
-            if ($route.path.endsWith(':id'))
-                route.where('id', IdMatcher)
-
+            this.makeRoute(key);
+            if (suffix && !this.$endpoints[key].path.endsWith(':id')) {
+                this.makeRoute(key, suffix)
+            }
         })
 
     }
@@ -83,7 +94,7 @@ export abstract class BaseController {
         if (!controller.$endpoints) controller.$endpoints = {}
         controller.$endpoints[key] = {
             verb,
-            path: controller.route+'/'+path,
+            path: controller.route+(path?('/'+path):''),
             version,
             auth,
             trx,

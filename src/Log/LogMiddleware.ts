@@ -10,7 +10,7 @@ export default class LogMiddleware extends Middleware {
   public async handle (ctx: HttpContextContract, next: () => Promise<void>) {
     //let prefix = Console.colored('ROUTE', 'lightgreen');
     //let line = Console.line(prefix, ctx.request.request.method!, `${ctx.request.request.url}`)
-    Logger.info( `${ctx.request.request.method} ${ctx.request.request.url}`);
+    Logger.info( `(in) ${ctx.request.request.method} ${ctx.request.request.url}`);
     //console.log(line);
     await next()
   }

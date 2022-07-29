@@ -1,7 +1,7 @@
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
-import ResourceMachine from "../ResourceMachine";
+import ResourceMachine from "../Machines/ResourceMachine";
 import { Status } from '../../Service';
-import { GraphLink } from '../Graph';
+import { GraphLink } from '../Props/Graph';
 import { Client } from '../../Auth/Client';
 import { ReverseEnum } from '../../Util/Enum';
 import BaseModel from '../Model';
@@ -148,15 +148,20 @@ export class QueryBuilder<T> {
         return q;
     }
 
-    public async run(): Promise<T[]> {
+    public async all(): Promise<T[]> {
         return (this.res as any).runQuery(this.client, this);
+    }
+
+    public async first(): Promise<T> {
+        const all = await this.all()
+        return all[0];
     }
 
 
 }
 
 export interface QuerySettings {
-    multi_tenancy: MultiTenancy
+    multi_tenancy?: MultiTenancy
 }
 
 export class Query {
@@ -175,7 +180,8 @@ export class Query {
         let query = model.query();
 
         if (client.trx) query.useTransaction(client.trx);
-        query = settings.multi_tenancy.decorateReadQuery(client, query);
+        if (settings.multi_tenancy)
+            query = settings.multi_tenancy.decorateReadQuery(client, query);
 
         for (let r in q.rules) {
             let rule = q.rules[r];
@@ -207,7 +213,7 @@ export class Query {
         const builder = (res.query(client) as any).addRule([param]) as QueryBuilder<any>;
         const rows = await this.run(client, builder, settings);
 
-        let fkey_child = res.name(true) + '_id';
+        let fkey_child = res.name('lower_snake') + '_id';
 
         // Parent stores reference to child id
         if (parent.$.Model.$hasColumn(fkey_child)) {
@@ -216,7 +222,7 @@ export class Query {
         }
         // Child stores reference to parent id
         else {
-            let fkey_parent = parent.name(true) + '_id';
+            let fkey_parent = parent.name('lower_snake') + '_id';
             param.param = 'id';
             param.value = rows.map(row => (row as any)[fkey_parent]);
         }
