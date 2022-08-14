@@ -16,7 +16,8 @@ const RuleMessage = {
     enum: 'não possui valor válido. Opções: ',
     enumSet: 'possui um valor inválido. Opções: ',
     boolean: 'não é um booleano',
-    date: 'não é uma data'
+    date: 'não é uma data',
+    'date.format': 'não é uma data'
 } as Record<string,string>;
 
 /** 
