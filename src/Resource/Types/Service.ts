@@ -1,5 +1,5 @@
-import { Client } from "src/Auth/Client"
-import Service, { Verb } from "src/Service"
+import { Client } from "../../Auth/Client"
+import Service, { Verb } from "../../Service"
 import { InputPropType, PropType } from "./Entity"
 import { InputSchema, OutputSchema } from "./Schema"
 import { TransitionCallback, TransitionGuard } from "./Transition"

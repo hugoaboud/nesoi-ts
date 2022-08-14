@@ -6,7 +6,7 @@ import { Config } from '../Config';
 import { QueryBuilder } from '../Resource/Helpers/Query';
 import { Middleware } from '../Middleware';
 import { Pagination } from '../Resource/Helpers/Pagination';
-import { Schema } from 'src/Resource/Types/Schema';
+import { Schema } from '../Resource/Types/Schema';
 
 export type ControllerTransition<S extends Schema> = {
     transition: keyof S['Transitions']

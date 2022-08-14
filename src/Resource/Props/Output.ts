@@ -1,4 +1,4 @@
-import { Client } from "src/Auth/Client";
+import { Client } from "../../Auth/Client";
 
 type PropType = 'boolean'|'int'|'decimal'|'string'|'money'|'lambda'|'object'
 

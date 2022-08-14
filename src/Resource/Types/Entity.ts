@@ -4,7 +4,7 @@ import { LambdaProp, Prop } from "../Props/Output"
 import { GraphLink } from "../Props/Graph"
 import { InputProp } from "../Props/Input"
 import { Transition, TransitionInput } from "./Transition"
-import { Client } from "src/Auth/Client"
+import { Client } from "../../Auth/Client"
 
 /** A resource built by a ResourceMachine */
 export type Entity<S extends Schema> = 

@@ -1,6 +1,6 @@
 import { Exception as BaseException } from '@adonisjs/core/build/standalone';
 import { validator, rules, schema, TypedSchema, ParsedTypedSchema } from '@ioc:Adonis/Core/Validator'
-import { InputSchema } from 'src/Resource/Types/Schema';
+import { InputSchema } from '../Resource/Types/Schema';
 import { InputPropT } from '../Resource/Props/Input';
 import { Status } from '../Service';
 

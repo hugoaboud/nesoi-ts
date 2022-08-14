@@ -1,4 +1,4 @@
-import { Client } from "src/Auth/Client"
+import { Client } from "../../Auth/Client"
 import { TransitionSchema } from "./Schema"
 import { TransitionInput } from "./Transition"
 

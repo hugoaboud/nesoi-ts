@@ -1,4 +1,4 @@
-import { Client } from "src/Auth/Client";
+import { Client } from "../../Auth/Client";
 import ResourceMachine from "../Machines/ResourceMachine";
 import Logger from '@ioc:Adonis/Core/Logger'
 

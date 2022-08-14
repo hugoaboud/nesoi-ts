@@ -87,7 +87,7 @@ class Exception extends BaseException {
         console.error(error);
         console.error(error.response?.data);
 
-        const nesoi_error = error.response?.data?.errors;
+        const nesoi_error = (error.response?.data as any).errors;
         const msg = nesoi_error?.base ? nesoi_error.base.join(',') : error.message;
 
         const e = new this(`<${service}>: ${msg}`, Status.BAD_GATEWAY, this.code);

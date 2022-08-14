@@ -1,4 +1,4 @@
-import { Client } from "src/Auth/Client"
+import { Client } from "../../Auth/Client"
 import { InputProp } from "../Props/Input"
 import { InputPropType } from "./Entity"
 import { InputSchema } from "./Schema"

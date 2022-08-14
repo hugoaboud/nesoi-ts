@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon'
 import { BaseModel as AdonisBaseModel, column } from '@ioc:Adonis/Lucid/Orm'
-import { Client } from 'src/Auth/Client'
+import { Client } from '../Auth/Client'
 import { Pagination } from './Helpers/Pagination'
 
 export default class BaseModel extends AdonisBaseModel {
