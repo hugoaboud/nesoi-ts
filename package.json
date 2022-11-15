@@ -1,6 +1,6 @@
 {
   "name": "nesoi-ts",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Micro-framework for quick development of distributed architectures.",
   "repository": "https://github.com/hugoaboud/nesoi-ts.git",
   "author": "Hugo Aboud <hugoaboud@gmail.com>",
