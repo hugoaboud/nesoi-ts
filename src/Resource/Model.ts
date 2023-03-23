@@ -5,6 +5,8 @@ import { Pagination } from './Helpers/Pagination'
 
 export default class BaseModel extends AdonisBaseModel {
 
+  public static multi_tenant = true
+
   @column({ isPrimary: true })
   public id!: number
   
@@ -32,7 +34,7 @@ export default class BaseModel extends AdonisBaseModel {
   static async readOne<M extends typeof BaseModel>(this: M, client: Client, id: number) {
     let query = this.query();
     if (client.trx) query = query.useTransaction(client.trx);
-    if (client.multi_tenancy)
+    if (this.multi_tenant && client.multi_tenancy)
       query = client.multi_tenancy.decorateReadQuery(client, query);
     query = query.whereNot('state', 'deleted');
     return query.where('id', id).first();
@@ -41,7 +43,7 @@ export default class BaseModel extends AdonisBaseModel {
   static async readAll<M extends typeof BaseModel>(this: M, client: Client, pagination?: Pagination) {
     let query = this.query();
     if (client.trx) query = query.useTransaction(client.trx);
-    if (client.multi_tenancy)
+    if (this.multi_tenant && client.multi_tenancy)
       query = client.multi_tenancy.decorateReadQuery(client, query);
     query = query.whereNot('state', 'deleted');
     if (pagination) query = pagination.decorateReadQuery(query);
@@ -52,7 +54,7 @@ export default class BaseModel extends AdonisBaseModel {
   static async readOneGroup<M extends typeof BaseModel>(this: M, client: Client, key: string, value: string | number) {
     let query = this.query();
     if (client.trx) query = query.useTransaction(client.trx);
-    if (client.multi_tenancy)
+    if (this.multi_tenant && client.multi_tenancy)
       query = client.multi_tenancy.decorateReadQuery(client, query);
     query = query.whereNot('state', 'deleted');
     return query.where(key, value);
