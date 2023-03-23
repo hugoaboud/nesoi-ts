@@ -20,15 +20,16 @@ export class ColumnBasedMultiTenancy {
 
     constructor(
         private column: string,
-        private save_param: string,
-        private read_param: string
+        private read_param: string,
+        private save_param?: string
     ) {}
 
     decorateObjectBeforeSave<T>(
         client: Client,
         obj: T
     ): T {
-        (obj as any)[this.column] = (client.user as any)[this.save_param];
+        if (this.save_param)
+            (obj as any)[this.column] = (client.user as any)[this.save_param];
         return obj;
     }
 

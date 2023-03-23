@@ -18,8 +18,8 @@ export class Config {
         },
         MultiTenancy: {
             column: 'created_by',
-            save_param: 'id',
-            read_param: 'id'
+            read_param: 'id',
+            save_param: 'id' as string|undefined
         }
 
     }
