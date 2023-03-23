@@ -4,6 +4,7 @@ import { Client } from '../Auth/Client'
 import { Pagination } from './Helpers/Pagination'
 import { ColumnBasedMultiTenancy, MultiTenancy } from './Helpers/MultiTenancy';
 import { Config } from '../Config';
+import DBException from '../Exception/DBException';
 
 export default class BaseModel extends AdonisBaseModel {
 
@@ -51,7 +52,9 @@ export default class BaseModel extends AdonisBaseModel {
     if (client.trx) query = query.useTransaction(client.trx);
     this.filterByTenant(client, query)
     query = query.whereNot('state', 'deleted');
-    return query.where('id', id).first();
+    return query.where('id', id).first().catch(e => {
+      throw DBException(e)
+    });
   }
   
   static async readAll<M extends typeof BaseModel>(this: M, client: Client, pagination?: Pagination) {
@@ -61,7 +64,9 @@ export default class BaseModel extends AdonisBaseModel {
     query = query.whereNot('state', 'deleted');
     if (pagination) query = pagination.decorateReadQuery(query);
     query = query.orderBy('updated_at', 'desc');
-    return query;
+    return query.catch(e => {
+      throw DBException(e)
+    });
   }
   
   static async readOneGroup<M extends typeof BaseModel>(this: M, client: Client, key: string, value: string | number) {
@@ -69,7 +74,9 @@ export default class BaseModel extends AdonisBaseModel {
     if (client.trx) query = query.useTransaction(client.trx);
     this.filterByTenant(client, query)
     query = query.whereNot('state', 'deleted');
-    return query.where(key, value);
+    return query.where(key, value).catch(e => {
+      throw DBException(e)
+    });
   }
 
 }

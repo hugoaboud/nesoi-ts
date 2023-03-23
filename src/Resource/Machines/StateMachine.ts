@@ -8,7 +8,6 @@ import { InputSchema, Model, Schema } from "../Types/Schema";
 import { TransitionGuard } from "../Types/Transition";
 import Builder from "../Helpers/Builder";
 import Validator from "../Helpers/Validator";
-import DBException from "../../Exception/DBException";
 
 /**
     [State Machine]
@@ -104,7 +103,6 @@ export abstract class StateMachine< T, S extends Schema > {
         client.pushAction(this as any, obj, t);
 
         if (trans.guards) await this.guard(client, trans.guards, obj, input).catch(e => {
-            if (e instanceof DBException) throw e;
             throw Exception.TransitionGuardFailed(this, e);
         });       
         
@@ -122,7 +120,6 @@ export abstract class StateMachine< T, S extends Schema > {
             obj.deleted_by = client.user.id;
         }
         await this.save(client, obj, t === 'create').catch(e => {
-            if (e instanceof DBException) throw e;
             throw Exception.SaveFailed(this, e)
         });
 
@@ -135,7 +132,6 @@ export abstract class StateMachine< T, S extends Schema > {
         if (trans.after) {
             await trans.after(obj, { input, client, parent: client.getAction(-2)?.model, build: this.build.bind(this) })
             await this.save(client, obj, t === 'create').catch(e => {
-                if (e instanceof DBException) throw e;
                 throw Exception.SaveFailed(this, e)
             });
         }
