@@ -20,14 +20,15 @@ export class ColumnBasedMultiTenancy {
 
     constructor(
         private column: string,
-        private user_param: string
+        private save_param: string,
+        private read_param: string
     ) {}
 
     decorateObjectBeforeSave<T>(
         client: Client,
         obj: T
     ): T {
-        (obj as any)[this.column] = (client.user as any)[this.user_param];
+        (obj as any)[this.column] = (client.user as any)[this.save_param];
         return obj;
     }
 
@@ -35,7 +36,10 @@ export class ColumnBasedMultiTenancy {
         client: Client,
         query: ModelQueryBuilderContract<Model, InstanceType<Model>>
     ): ModelQueryBuilderContract<Model, InstanceType<Model>> {
-        return query.where(this.column, (client.user as any)[this.user_param]);
+        const param = (client.user as any)[this.read_param];
+        if (Array.isArray(param))
+            return query.whereIn(this.column, param);
+        return query.where(this.column, param);
     }
 
 }

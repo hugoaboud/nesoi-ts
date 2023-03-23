@@ -10,7 +10,8 @@ export default class BaseModel extends AdonisBaseModel {
 
   public static multi_tenancy = new ColumnBasedMultiTenancy(
     Config.get('MultiTenancy').column,
-    Config.get('MultiTenancy').user_key
+    Config.get('MultiTenancy').save_param,
+    Config.get('MultiTenancy').read_param
   ) as MultiTenancy|undefined;
 
   @column({ isPrimary: true })
