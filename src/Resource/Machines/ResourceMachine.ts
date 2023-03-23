@@ -74,9 +74,7 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
     }
 
     protected async runQuery(client: Client, query: QueryBuilder<T>): Promise<T[]> {
-        const objs = await Query.run(client, query, {
-            multi_tenancy: client.multi_tenancy
-        });
+        const objs = await Query.run(client, query);
         return this.buildAll(client, objs as any);
     }
 
@@ -212,8 +210,9 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
         obj: Model<S>,
         create: boolean
     ) {
-        if (create && client.multi_tenancy)
-            obj = client.multi_tenancy.decorateObjectBeforeSave(client, obj);
+        const model = obj.constructor as typeof BaseModel;
+        if (create && model.multi_tenancy)
+            obj = model.multi_tenancy.decorateObjectBeforeSave(client, obj);
         obj.useTransaction(client.trx);
         await obj.save();
         await obj.refresh();

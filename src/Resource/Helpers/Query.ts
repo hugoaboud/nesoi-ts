@@ -5,7 +5,6 @@ import { GraphLink } from '../Props/Graph';
 import { Client } from '../../Auth/Client';
 import { ReverseEnum } from '../../Util/Enum';
 import BaseModel from '../Model';
-import { MultiTenancy } from './MultiTenancy';
 
 type Operator = 'like'|'='|'>='|'<='|'in'
 type Value = string|number|string[]|number[]
@@ -160,10 +159,6 @@ export class QueryBuilder<T> {
 
 }
 
-export interface QuerySettings {
-    multi_tenancy?: MultiTenancy
-}
-
 export class Query {
 
     public rules!: Rule[]
@@ -173,22 +168,21 @@ export class Query {
     public res!: ResourceMachine<any,any>
     public service!: boolean
 
-    static async run(client: Client, builder: QueryBuilder<any>, settings: QuerySettings): Promise<BaseModel[]> {
+    static async run(client: Client, builder: QueryBuilder<any>): Promise<BaseModel[]> {
         
         let q = builder as any as Query;
         let model = q.res.$.Model as (typeof BaseModel);
         let query = model.query();
 
         if (client.trx) query.useTransaction(client.trx);
-        if (settings.multi_tenancy)
-            query = settings.multi_tenancy.decorateReadQuery(client, query);
+        model.filterByTenant(client, query)
 
         for (let r in q.rules) {
             let rule = q.rules[r];
             let qrule = [] as [string,string,any][];
             for (let p in rule) {
                 let param = rule[p];
-                await this.walk(client, q.res, param, settings);
+                await this.walk(client, q.res, param);
                 // TODO: array columns
                 if (param.op === 'like') param.value = '%'+param.value+'%';
                 qrule.push([param.param, param.op, param.value]);
@@ -205,13 +199,13 @@ export class Query {
         return query as any;
     }
 
-    private static async walk(client: Client, parent: ResourceMachine<any,any>, param: Param, settings: QuerySettings): Promise<void> {
+    private static async walk(client: Client, parent: ResourceMachine<any,any>, param: Param): Promise<void> {
         
         if (!param.path.length) return;
 
         const res = param.path.shift()!;
         const builder = (res.query(client) as any).addRule([param]) as QueryBuilder<any>;
-        const rows = await this.run(client, builder, settings);
+        const rows = await this.run(client, builder);
 
         let fkey_child = res.name('lower_snake') + '_id';
 

@@ -36,7 +36,7 @@ export default class BaseModel extends AdonisBaseModel {
   @column.dateTime()
   public deleted_at?: DateTime
   
-  private static filterByTenant<M extends typeof BaseModel>(this: M, client: Client, query: ModelQueryBuilderContract<any, any>) {
+  static filterByTenant<M extends typeof BaseModel>(this: M, client: Client, query: ModelQueryBuilderContract<any, any>) {
     if (client.super_tenant.includes('*'))
       return query
     if (client.super_tenant.includes(this.table))
