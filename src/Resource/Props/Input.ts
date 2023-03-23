@@ -140,13 +140,13 @@ export class InputProp<T,L> {
 
     /* Database Rules */
     
-    noDuplicate(column: string | string[]) {
+    noDuplicate(column: string | string[], global = false) {
         const cols = Array.isArray(column) ? column : [column];
         this.rules.push({
             scope: 'database',
             fn: (async (input: Record<string,any>, k: string, machine: StateMachine<any,any>, _:InputProp<any,any>, client: Client) => {
                 const model = machine.$.Model as typeof BaseModel;
-                let entries = await model.readOneGroup(client, cols[0], input[k]);
+                let entries = await model.readOneGroup(client, cols[0], input[k], !global);
                 cols.forEach(col => {
                     entries = entries.filter((e:any) => e[col] === input[col])
                 })

@@ -47,20 +47,20 @@ export default class BaseModel extends AdonisBaseModel {
     return this.multi_tenancy.decorateReadQuery(client, query);
   }
 
-  static async readOne<M extends typeof BaseModel>(this: M, client: Client, id: number) {
+  static async readOne<M extends typeof BaseModel>(this: M, client: Client, id: number, multi_tenancy = true) {
     let query = this.query();
     if (client.trx) query = query.useTransaction(client.trx);
-    this.filterByTenant(client, query)
+    if (multi_tenancy) this.filterByTenant(client, query)
     query = query.whereNot('state', 'deleted');
     return query.where('id', id).first().catch(e => {
       throw DBException(e)
     });
   }
   
-  static async readAll<M extends typeof BaseModel>(this: M, client: Client, pagination?: Pagination) {
+  static async readAll<M extends typeof BaseModel>(this: M, client: Client, pagination?: Pagination, multi_tenancy = true) {
     let query = this.query();
     if (client.trx) query = query.useTransaction(client.trx);
-    this.filterByTenant(client, query)
+    if (multi_tenancy) this.filterByTenant(client, query)
     query = query.whereNot('state', 'deleted');
     if (pagination) query = pagination.decorateReadQuery(query);
     query = query.orderBy('updated_at', 'desc');
@@ -69,10 +69,10 @@ export default class BaseModel extends AdonisBaseModel {
     });
   }
   
-  static async readOneGroup<M extends typeof BaseModel>(this: M, client: Client, key: string, value: string | number) {
+  static async readOneGroup<M extends typeof BaseModel>(this: M, client: Client, key: string, value: string | number, multi_tenancy = true) {
     let query = this.query();
     if (client.trx) query = query.useTransaction(client.trx);
-    this.filterByTenant(client, query)
+    if (multi_tenancy) this.filterByTenant(client, query)
     query = query.whereNot('state', 'deleted');
     return query.where(key, value).catch(e => {
       throw DBException(e)

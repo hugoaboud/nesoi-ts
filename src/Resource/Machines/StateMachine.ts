@@ -8,6 +8,7 @@ import { InputSchema, Model, Schema } from "../Types/Schema";
 import { TransitionGuard } from "../Types/Transition";
 import Builder from "../Helpers/Builder";
 import Validator from "../Helpers/Validator";
+import DBException from "../../Exception/DBException";
 
 /**
     [State Machine]
@@ -120,7 +121,7 @@ export abstract class StateMachine< T, S extends Schema > {
             obj.deleted_by = client.user.id;
         }
         await this.save(client, obj, t === 'create').catch(e => {
-            throw Exception.SaveFailed(this, e)
+            throw DBException(e)
         });
 
         const last = client.getAction(-2);
@@ -132,7 +133,7 @@ export abstract class StateMachine< T, S extends Schema > {
         if (trans.after) {
             await trans.after(obj, { input, client, parent: client.getAction(-2)?.model, build: this.build.bind(this) })
             await this.save(client, obj, t === 'create').catch(e => {
-                throw Exception.SaveFailed(this, e)
+                throw DBException(e)
             });
         }
 
@@ -199,14 +200,6 @@ export class Exception extends BaseException {
 
     static TransitionGuardFailed(machine: StateMachine<any, any>, msg: string) {
         return new this(machine, msg, Status.BADREQUEST);
-    }
-
-    static TransitionFailed(machine: StateMachine<any, any>, trans: string, e: Error) {
-        return new this(machine, `[${trans}|after] ${e.message}`, Status.BADREQUEST);
-    }
-
-    static SaveFailed(machine: StateMachine<any, any>, e: Error) {
-        return new this(machine, `[save] ${e.message}`, Status.BADREQUEST);
     }
 
 }
