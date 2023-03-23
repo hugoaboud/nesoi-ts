@@ -1,56 +1,56 @@
-import { $Service as $ } from '../../src/Resource';
-import WorldService from './WorldService';
+// import { $Service as $ } from '../../src/Resource';
+// import WorldService from './WorldService';
 
-const o = $.Prop<ShrineModel>()
+// const o = $.Prop<ShrineModel>()
 
-export interface ShrineModel extends $.BaseModel {
-    name: string
-    place: {
-        planet: string
-        lat: number
-        lon: number
-    }
-}
+// export interface ShrineModel extends $.BaseModel {
+//     name: string
+//     place: {
+//         planet: string
+//         lat: number
+//         lon: number
+//     }
+// }
 
-export class $Shrine extends $.Schema<ShrineModel>()({
+// export class $Shrine extends $.Schema<ShrineModel>()({
 
-    Service: WorldService,
-    Version: 'v1',
+//     Service: WorldService,
+//     Version: 'v1',
     
-    Name: 'Shrine',
-    Alias: 'Fonte',
-    Route: 'shrines',
+//     Name: 'Shrine',
+//     Alias: 'Fonte',
+//     Route: 'shrines',
     
-    Parse: obj => {
-        return {
-            planet: obj.place.planet
-        }
-    },
+//     Parse: obj => {
+//         return {
+//             planet: obj.place.planet
+//         }
+//     },
 
-    Output: {
-        extra: o('name').string
-    },
+//     Output: {
+//         extra: o('name').string
+//     },
 
-    Transitions: {
+//     Transitions: {
 
-        create: $.Transition<{
-            name: string
-        }>({
-            verb: 'post',
-            url: '/'
-        }),
+//         create: $.Transition<{
+//             name: string
+//         }>({
+//             verb: 'post',
+//             url: '/'
+//         }),
 
-        // travel: $.Transition<{
-        //     planet: 'Mars' | 'Jupiter'
-        // }>({
-        //     verb: 'post',
-        //     url: '/travel'
-        // })
+//         // travel: $.Transition<{
+//         //     planet: 'Mars' | 'Jupiter'
+//         // }>({
+//         //     verb: 'post',
+//         //     url: '/travel'
+//         // })
 
-    }
-}){}
+//     }
+// }){}
 
-type Shrine = $.Type<$Shrine>;
-const Shrine = new $.Machine<Shrine, $Shrine>($Shrine.$);
+// type Shrine = $.Type<$Shrine>;
+// const Shrine = new $.Machine<Shrine, $Shrine>($Shrine.$);
 
-export default Shrine;
+// export default Shrine;
