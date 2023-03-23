@@ -1,7 +1,5 @@
 import { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
 import ResourceMachine from '../Resource/Machines/ResourceMachine';
-import { ColumnBasedMultiTenancy, MultiTenancy } from '../Resource/Helpers/MultiTenancy';
-import { Config } from '../Config';
 import Cache from '../Resource/Helpers/Cache';
 import { Schema } from '../Resource/Types/Schema';
 
@@ -20,18 +18,14 @@ export class Client {
     
     public trx!: TransactionClientContract
     public stack: ClientAction<any,any>[] = []
-    public multi_tenancy?: MultiTenancy
 
     protected cache: Cache
 
     constructor(
         public user: User,
-        public tokens: Record<string,string> = {}
+        public tokens: Record<string,string> = {},
+        public super_tenant: string[] = []
     ) {
-        this.multi_tenancy = new ColumnBasedMultiTenancy(
-            Config.get('MultiTenancy').column,
-            Config.get('MultiTenancy').user_key
-        );
         this.cache = new Cache(this);
     }
 
@@ -57,7 +51,4 @@ export class Client {
         return this.cache;
     }
 
-    noMultiTenancy() {
-        this.multi_tenancy = undefined;
-    }
 }
