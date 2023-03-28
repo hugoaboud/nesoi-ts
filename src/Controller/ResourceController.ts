@@ -102,9 +102,11 @@ export function ResourceController<T,S extends Schema>(
             if (
                 transition_keys.includes('create')
             ) {
+                const t = transitions.find(t => t.transition == 'create')
+                const t_auth = t!.auth || auth
                 this.$endpoints['create'] = {
                     verb: 'post', path,
-                    auth, trx: true, version, middlewares: []
+                    auth: t_auth, trx: true, version, middlewares: []
                 }
             }
             
@@ -112,9 +114,11 @@ export function ResourceController<T,S extends Schema>(
                 transition_keys.includes('edit') &&
                 'edit' in resource.$.Transitions
             ) {
+                const t = transitions.find(t => t.transition == 'edit')
+                const t_auth = t!.auth || auth
                 this.$endpoints['edit'] = {
                     verb: Config.get('Routing').edit_verb, path: path+'/:id',
-                    auth, trx: true, version, middlewares: []
+                    auth: t_auth, trx: true, version, middlewares: []
                 }
             }
             
@@ -122,9 +126,11 @@ export function ResourceController<T,S extends Schema>(
                 transition_keys.includes('delete') &&
                 'delete' in resource.$.Transitions
             ) {
+                const t = transitions.find(t => t.transition == 'delete')
+                const t_auth = t!.auth || auth
                 this.$endpoints['delete'] = {
                     verb: 'delete', path: path+'/:id',
-                    auth, trx: true, version, middlewares: []
+                    auth: t_auth, trx: true, version, middlewares: []
                 }
             }
 
