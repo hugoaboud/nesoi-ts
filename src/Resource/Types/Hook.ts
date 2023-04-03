@@ -21,6 +21,7 @@ export type HookCallback<
 > = ( 
     obj: Model,
     args: {
+        from: string,
         client: Client,
         input: Record<string,any>,
         run: <K extends keyof Transitions>(transition: K, input: TransitionInput<Transitions[K]>) => Promise<void>

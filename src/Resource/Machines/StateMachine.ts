@@ -144,6 +144,7 @@ export abstract class StateMachine< T, S extends Schema > {
                 if ((hook.state === from && hook.on === 'exit') ||
                     (hook.state === to   && hook.on === 'enter'))
                     await hook.fn(obj,{
+                        from,   
                         client,
                         input,
                         run: async (t, input) => {
