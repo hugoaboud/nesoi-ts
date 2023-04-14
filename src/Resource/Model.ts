@@ -63,7 +63,10 @@ export default class BaseModel extends AdonisBaseModel {
     if (client.trx) query = query.useTransaction(client.trx);
     if (multi_tenancy) this.filterByTenant(client, query)
     query = query.whereNot('state', 'deleted');
-    if (pagination) query = pagination.decorateReadQuery(query);
+    if (pagination) {
+      await pagination.storeQueryTotalCount(query);
+      query = pagination.decorateReadQuery(query);
+    }
     query = query.orderBy('updated_at', 'desc');
     return query.catch(e => {
       throw DBException(e)

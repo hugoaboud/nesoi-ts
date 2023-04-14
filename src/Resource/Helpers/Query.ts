@@ -5,6 +5,7 @@ import { GraphLink } from '../Props/Graph';
 import { Client } from '../../Auth/Client';
 import { ReverseEnum } from '../../Util/Enum';
 import BaseModel from '../Model';
+import { Pagination } from './Pagination';
 
 type Operator = 'like'|'='|'>='|'<='|'in'
 type Value = string|number|string[]|number[]
@@ -36,6 +37,7 @@ export class QueryBuilder<T> {
     protected rules: Rule[] = []
     protected sort?: Sort
     protected out?: Record<string,string>
+    protected pagination?: Pagination
     
     constructor(
         protected client: Client,
@@ -69,6 +71,11 @@ export class QueryBuilder<T> {
     
     expectFormat(format: Record<string,any>): QueryBuilder<T> {
         this.out = format;
+        return this;
+    }
+
+    paginate(pagination: Pagination): QueryBuilder<T> {
+        this.pagination = pagination;
         return this;
     }
 
@@ -167,6 +174,7 @@ export class Query {
     public client!: Client
     public res!: ResourceMachine<any,any>
     public service!: boolean
+    public pagination?: Pagination
 
     static async run(client: Client, builder: QueryBuilder<any>): Promise<BaseModel[]> {
         
@@ -196,6 +204,11 @@ export class Query {
         }
 
         query = query.whereNot('state', 'deleted');
+        if (q.pagination) {
+            await q.pagination.storeQueryTotalCount(query);
+            query = q.pagination.decorateReadQuery(query)
+        }
+        query = query.orderBy('updated_at', 'desc');
         return query as any;
     }
 

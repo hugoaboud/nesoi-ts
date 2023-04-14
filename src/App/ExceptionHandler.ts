@@ -12,8 +12,9 @@ export default class ExceptionHandler extends HttpExceptionHandler {
   }
 
   public async handle(error: Exception, ctx: HttpContextContract) {
-   
-    console.error(error)
+    
+    
+    this.logger.error(error as any)
 
     let messages:any[] = [];
     const e_messages = (error as any).messages

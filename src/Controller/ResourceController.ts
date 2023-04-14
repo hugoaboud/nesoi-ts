@@ -50,8 +50,10 @@ export function ResourceController<T,S extends Schema>(
             return super.guard(ctx, trx, fn);
         }
 
-        async readAll() {
-            return resource.readAll(this.client, this.pagination);
+        async readAll(ctx: HttpContextContract) {
+            const resources = await resource.readAll(this.client, this.pagination);
+            this.pagination?.writeResponseHeaders(ctx);
+            return resources;
         }
 
         async readOne(ctx: HttpContextContract) {
@@ -68,7 +70,11 @@ export function ResourceController<T,S extends Schema>(
 
         async query(ctx: HttpContextContract) {
             const body = ctx.request.body();
-            return QueryBuilder.fromRansack(this.client, resource, body.q).all();
+            let query = QueryBuilder.fromRansack(this.client, resource, body.q)
+            if (this.pagination) query = query.paginate(this.pagination)
+            const resources = await query.all();
+            this.pagination?.writeResponseHeaders(ctx);
+            return resources;
         }
 
         async edit(ctx: HttpContextContract) {
