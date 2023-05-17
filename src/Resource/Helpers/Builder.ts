@@ -60,9 +60,13 @@ export default class Builder<T, S extends Schema> {
         link: GraphLink<R>
     ) {
         const fkey = link.fkey!;
+        const id = (obj as any)[fkey];
+        if (!id) {
+            return undefined
+        }
 
         try {
-            const res = await link.resource.readOne(client, (obj as any)[fkey], true);
+            const res = await link.resource.readOne(client, id, true);
             if (!link.one_parser) return res;
             return link.one_parser(res);
         }
