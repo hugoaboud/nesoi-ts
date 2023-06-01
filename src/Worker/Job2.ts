@@ -43,7 +43,7 @@ export function $<
 }) {
     return class extends Job<typeof $> {
         getSchema() { return $ }
-    } as typeof Job<typeof $>
+    }
 }
 
 export class Job<S extends JobSchema> {

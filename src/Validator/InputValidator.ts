@@ -17,7 +17,8 @@ const RuleMessage = {
     enumSet: 'possui um valor inválido. Opções: ',
     boolean: 'não é um booleano',
     date: 'não é uma data',
-    'date.format': 'não é uma data'
+    'date.format': 'não é uma data',
+    'file': 'não é um arquivo'
 } as Record<string,string>;
 
 /** 
@@ -120,14 +121,18 @@ export class InputValidator {
         if (prop.required === false || requiredWhen.length) {
             if (p === 'enumSet')
                 validator = validator.optional(prop.options, requiredWhen);
-            else if (type === 'file' && !prop.list)
+            else if (prop.type === 'file' && !prop.list)
                 validator = validator.optional(prop.fileSettings, requiredWhen);
             else
                 validator = validator.optional(requiredWhen);
         }
         else {
-            if (prop.type === 'enum') validator = validator(prop.options);
-            else validator = validator();
+            if (prop.type === 'enum')
+                validator = validator(prop.options);
+            else if (prop.type === 'file' && !prop.list)
+                validator = validator(prop.fileSettings);
+            else
+                validator = validator();
         }
 
         if (prop.list && !prop.members && prop.type !== 'enum') {
