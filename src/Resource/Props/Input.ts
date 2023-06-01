@@ -6,12 +6,13 @@ import { InputSchema } from '../Types/Schema'
 import { StateMachine } from '../Machines/StateMachine'
 import { InputPropType } from '../Types/Entity'
 import { Entity, Input } from '..'
+import { MultipartFileContract } from '@ioc:Adonis/Core/BodyParser'
 
 /*
    Definition Types
 */
 
-type InputType = 'boolean'|'int'|'float'|'string'|'date'|'datetime'|'object'|'enum'|'transition'|'id'
+type InputType = 'boolean'|'int'|'float'|'string'|'date'|'datetime'|'object'|'enum'|'transition'|'id'|'file'
 type InputScope = 'public'|'protected'|'private'
 type InputRequiredWhen = {
     param: string
@@ -42,7 +43,11 @@ export class InputProp<T,L> {
         protected list?: boolean,
         protected members?: InputSchema,
         protected options?: readonly string[],
-        protected child?: ResourceMachine<any,any>
+        protected child?: ResourceMachine<any,any>,
+        protected fileSettings?: {
+            size: string,
+            extnames: string[]
+        },
     ) {
         if (type === 'id') {
             const scope = (child!.$ as any).Service ? 'service' : 'database';
@@ -247,7 +252,16 @@ export function $(alias: string) {
                 new InputProp<Input<R['$'],T>, never>(
                     alias, 'transition', false,
                     resource.$.Transitions[transition].input, undefined, resource
-                )
+                ),
+        file: (max_size: string, extnames: string[]) => {
+            new InputProp<MultipartFileContract, never>(
+                alias, 'file', false,
+                undefined, undefined, undefined, {
+                    size: max_size,
+                    extnames
+                }
+            )
+        }
     }
 }
 
@@ -270,5 +284,9 @@ export type InputPropT = {
     members?: InputSchema
     options?: string[]
     child?: ResourceMachine<any,any>
+    fileSettings?: {
+        size: string,
+        extnames: string[]
+    }
     log: boolean
 }

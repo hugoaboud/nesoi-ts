@@ -95,7 +95,8 @@ export class InputValidator {
             datetime: 'date',
             object: 'object',
             transition: 'object',
-            id: 'number'
+            id: 'number',
+            file: 'file'
         }[prop.type];
         
         let p = type;
@@ -117,9 +118,12 @@ export class InputValidator {
         }
 
         if (prop.required === false || requiredWhen.length) {
-            if (type === 'enum') validator = validator.optional(prop.options, requiredWhen);
-            else if (type === 'date') validator = validator.optional(undefined, requiredWhen);
-            else validator = validator.optional(requiredWhen);
+            if (p === 'enumSet')
+                validator = validator.optional(prop.options, requiredWhen);
+            else if (type === 'file' && !prop.list)
+                validator = validator.optional(prop.fileSettings, requiredWhen);
+            else
+                validator = validator.optional(requiredWhen);
         }
         else {
             if (prop.type === 'enum') validator = validator(prop.options);
@@ -127,7 +131,10 @@ export class InputValidator {
         }
 
         if (prop.list && !prop.members && prop.type !== 'enum') {
-            validator = validator.members((schema as any)[type]())
+            if (prop.type === 'file')
+                validator = validator.members((schema as any).file(prop.fileSettings))
+            else
+                validator = validator.members((schema as any)[type]())
         }
 
         return validator;
