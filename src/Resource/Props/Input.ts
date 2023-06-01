@@ -58,7 +58,7 @@ export class InputProp<T,L> {
 
     
     array() {
-        let prop = new InputProp<T[], L extends never ? never : L[]>(this.alias, this.type, true, this.members, this.options, this.child);
+        let prop = new InputProp<T[], L extends never ? never : L[]>(this.alias, this.type, true, this.members, this.options, this.child, this.fileSettings);
         return prop;
     }
 
