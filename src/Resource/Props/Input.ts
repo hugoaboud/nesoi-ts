@@ -253,7 +253,7 @@ export function $(alias: string) {
                     alias, 'transition', false,
                     resource.$.Transitions[transition].input, undefined, resource
                 ),
-        file: (max_size: string, extnames: string[]) => {
+        file: (max_size: string, extnames: string[]) =>
             new InputProp<MultipartFileContract, never>(
                 alias, 'file', false,
                 undefined, undefined, undefined, {
@@ -261,7 +261,6 @@ export function $(alias: string) {
                     extnames
                 }
             )
-        }
     }
 }
 
