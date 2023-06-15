@@ -107,7 +107,12 @@ export abstract class StateMachine< T, S extends Schema > {
             throw Exception.TransitionGuardFailed(this, e);
         });       
         
-        if (trans.fn) await trans.fn(obj, { input, client, parent: client.getAction(-2)?.model, build: this.build.bind(this) });
+        if (trans.fn) await trans.fn(obj, { 
+            input,
+            client,
+            parent: client.getAction(-2)?.model,
+            build: this.build.bind(this)
+        });
         
         obj.state = to as string;
         if (t === 'create') {
@@ -131,7 +136,12 @@ export abstract class StateMachine< T, S extends Schema > {
             .info(t as string, origin, `${trans.alias} ${this.alias()} id:${obj.id}`, log_data || {});
 
         if (trans.after) {
-            await trans.after(obj, { input, client, parent: client.getAction(-2)?.model, build: this.build.bind(this) })
+            await trans.after(obj, { 
+                input,
+                client,
+                parent: client.getAction(-2)?.model,
+                build: this.build.bind(this)
+            })
             await this.save(client, obj, t === 'create').catch(e => {
                 throw DBException(e)
             });

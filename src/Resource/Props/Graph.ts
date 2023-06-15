@@ -16,6 +16,7 @@ export class GraphLink<Type> {
         public resource: ResourceMachine<any,any>,
         public fkey?: string,
         public many = false,
+        public multi_tenancy = true,
         public parser?: (entities: any) => any,
         public one_parser?: (entity: any) => any,
         public sorter?: (a: Single<Type>, b: Single<Type>) => number
@@ -25,15 +26,20 @@ export class GraphLink<Type> {
     }
 
     public parseOne<T>(fn: (entity: Single<Type>) => T) {
-        return new GraphLink<T>(this.resource, this.fkey, this.many, this.parser, fn)
+        return new GraphLink<T>(this.resource, this.fkey, this.many, this.multi_tenancy, this.parser, fn)
     }
 
     public parse<T>(fn: (entities: Type) => T) {
-        return new GraphLink<T>(this.resource, this.fkey, this.many, fn, this.one_parser);
+        return new GraphLink<T>(this.resource, this.fkey, this.many, this.multi_tenancy, fn, this.one_parser);
     }
 
     public sort(fn: (el: any) => number) {
         this.sorter = fn;
+        return this;
+    }
+
+    public noMultiTenancy() {
+        this.multi_tenancy = false;
         return this;
     }
 
