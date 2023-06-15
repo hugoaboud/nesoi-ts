@@ -1,6 +1,7 @@
 import { Client } from "../../Auth/Client";
 import ResourceMachine from "../Machines/ResourceMachine";
 import Logger from '@ioc:Adonis/Core/Logger'
+import { Tenancy } from "../Model";
 
 
 type EntityCache = Record<number,Promise<Record<string,any>>>
@@ -14,14 +15,14 @@ export default class Cache {
         private client: Client
     ) {}
 
-    async readOne(resource: ResourceMachine<any,any>, id: number) {
+    async readOne(resource: ResourceMachine<any,any>, id: number, tenancy: Tenancy = 'default') {
 
         const name = resource.name();
         
         this.cache[name] = this.cache[name] || {};
         
         if (!(id in this.cache[name])) {
-            this.cache[name][id] = resource.readOne(this.client, id);
+            this.cache[name][id] = resource.readOne(this.client, id, false, tenancy);
         }
         else {
             Logger.info(`(cache) ${resource.name()} id:${id}`);
