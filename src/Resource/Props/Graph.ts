@@ -27,11 +27,11 @@ export class GraphLink<Type> {
     }
 
     public parseOne<T>(fn: (entity: Single<Type>) => T) {
-        return new GraphLink<T>(this.resource, this.fkey, this.many, this.multi_tenancy, this.parser, fn)
+        return new GraphLink<T>(this.resource, this.fkey, this.many, this.tenancy, this.parser, fn)
     }
 
     public parse<T>(fn: (entities: Type) => T) {
-        return new GraphLink<T>(this.resource, this.fkey, this.many, this.multi_tenancy, fn, this.one_parser);
+        return new GraphLink<T>(this.resource, this.fkey, this.many, this.tenancy, fn, this.one_parser);
     }
 
     public sort(fn: (el: any) => number) {

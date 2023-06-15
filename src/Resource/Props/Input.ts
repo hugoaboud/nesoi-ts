@@ -1,4 +1,4 @@
-import BaseModel from '../Model'
+import BaseModel, { Tenancy } from '../Model'
 import ResourceMachine from '../Machines/ResourceMachine'
 import { Client } from '../../Auth/Client'
 import { isEmpty } from '../../Validator/ResourceSchemaValidator'
@@ -145,13 +145,13 @@ export class InputProp<T,L> {
 
     /* Database Rules */
     
-    noDuplicate(column: string | string[], global = false) {
+    noDuplicate(column: string | string[], tenancy: Tenancy = 'default') {
         const cols = Array.isArray(column) ? column : [column];
         this.rules.push({
             scope: 'database',
             fn: (async (input: Record<string,any>, k: string, machine: StateMachine<any,any>, _:InputProp<any,any>, client: Client) => {
                 const model = machine.$.Model as typeof BaseModel;
-                let entries = await model.readOneGroup(client, cols[0], input[k], !global);
+                let entries = await model.readOneGroup(client, cols[0], input[k], tenancy);
                 cols.forEach(col => {
                     entries = entries.filter((e:any) => e[col] === input[col])
                 })
