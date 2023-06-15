@@ -2,7 +2,7 @@ import { Status } from '../../Service';
 import { Client } from "../../Auth/Client";
 import { CamelToSnakeCase } from "../../Util/String";
 import { ResourceSchemaValidator } from "../../Validator/ResourceSchemaValidator";
-import BaseModel from "../Model";
+import BaseModel, { Tenancy } from "../Model";
 import { StateMachine } from './StateMachine';
 import { Query, QueryBuilder } from '../Helpers/Query';
 import { Pagination } from '../Helpers/Pagination';
@@ -48,22 +48,24 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
         return this.buildAll(client, objs);
     }
 
-    async readOne(client: Client, id: number, cache = false): Promise<T> {
+    async readOne(client: Client, id: number, cache = false, tenancy: Tenancy = 'default'): Promise<T> {
         if (cache) {
             return client.getCache().readOne(this, id) as any;
         }
-        const obj = await this.readOneFromModel(client, this.$.Model, id);
+        const obj = await this.readOneFromModel(client, this.$.Model, id, tenancy);
         if (!obj) throw Exception.NotFound(this, id);
         return this.build(client, obj);
     }
 
-    async readMany(client: Client, ids: number[]): Promise<T[]> {
+    async readMany(client: Client, ids: number[], tenancy: Tenancy = 'default'): Promise<T[]> {
         if (!ids.length) return [];
-        return this.query(client).rule('id','in',ids).all();
+        let query = this.query(client)
+        if (tenancy === 'default') query = query.noTenancy()
+        return query.rule('id','in',ids).all();
     }
 
-    async readOneGroup(client: Client, key: keyof Model<S>, value: string | number): Promise<T[]> {
-        const objs = await this.readOneGroupFromModel(client, this.$.Model, key as string, value);
+    async readOneGroup(client: Client, key: keyof Model<S>, value: string | number, tenancy: Tenancy = 'default'): Promise<T[]> {
+        const objs = await this.readOneGroupFromModel(client, this.$.Model, key as string, value, tenancy);
         return this.buildAll(client, objs);
     }
     
@@ -183,26 +185,29 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
     protected async readOneFromModel(
         client: Client,
         model: typeof BaseModel,
-        id: number
+        id: number,
+        tenancy: Tenancy = 'default'
     ) {
-        return model.readOne(client, id) as Promise<Model<S> | null>;
+        return model.readOne(client, id, tenancy) as Promise<Model<S> | null>;
     }
 
     protected async readAllFromModel(
         client: Client,
         model: typeof BaseModel,
-        pagination?: Pagination
+        pagination?: Pagination,
+        tenancy: Tenancy = 'default'
     ) {
-        return model.readAll(client, pagination) as Promise<Model<S>[]>;
+        return model.readAll(client, pagination, tenancy) as Promise<Model<S>[]>;
     }
 
     protected async readOneGroupFromModel(
         client: Client,
         model: typeof BaseModel,
         key: string,
-        value: string|number
+        value: string|number,
+        tenancy: Tenancy = 'default'
     ) {
-        return model.readOneGroup(client, key, value) as Promise<Model<S>[]>;
+        return model.readOneGroup(client, key, value, tenancy) as Promise<Model<S>[]>;
     }
 
     async save(

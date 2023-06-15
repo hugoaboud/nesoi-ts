@@ -6,6 +6,8 @@ import { ColumnBasedMultiTenancy, MultiTenancy } from './Helpers/MultiTenancy';
 import { Config } from '../Config';
 import DBException from '../Exception/DBException';
 
+export type Tenancy = 'default'|'no_tenancy'
+
 export default class BaseModel extends AdonisBaseModel {
 
   public static multi_tenancy = new ColumnBasedMultiTenancy(
@@ -48,20 +50,20 @@ export default class BaseModel extends AdonisBaseModel {
     return this.multi_tenancy.decorateReadQuery(client, query);
   }
 
-  static async readOne<M extends typeof BaseModel>(this: M, client: Client, id: number, multi_tenancy = true) {
+  static async readOne<M extends typeof BaseModel>(this: M, client: Client, id: number, tenancy: Tenancy = 'default') {
     let query = this.query();
     if (client.trx) query = query.useTransaction(client.trx);
-    if (multi_tenancy) this.filterByTenant(client, query)
+    if (tenancy === 'default') this.filterByTenant(client, query)
     query = query.whereNot('state', 'deleted');
     return query.where('id', id).first().catch(e => {
       throw DBException(e)
     });
   }
   
-  static async readAll<M extends typeof BaseModel>(this: M, client: Client, pagination?: Pagination, multi_tenancy = true) {
+  static async readAll<M extends typeof BaseModel>(this: M, client: Client, pagination?: Pagination, tenancy: Tenancy = 'default') {
     let query = this.query();
     if (client.trx) query = query.useTransaction(client.trx);
-    if (multi_tenancy) this.filterByTenant(client, query)
+    if (tenancy === 'default') this.filterByTenant(client, query)
     query = query.whereNot('state', 'deleted');
     if (pagination) {
       await pagination.storeQueryTotalCount(query);
@@ -73,10 +75,10 @@ export default class BaseModel extends AdonisBaseModel {
     });
   }
   
-  static async readOneGroup<M extends typeof BaseModel>(this: M, client: Client, key: string, value: string | number, multi_tenancy = true) {
+  static async readOneGroup<M extends typeof BaseModel>(this: M, client: Client, key: string, value: string | number, tenancy: Tenancy = 'default') {
     let query = this.query();
     if (client.trx) query = query.useTransaction(client.trx);
-    if (multi_tenancy) this.filterByTenant(client, query)
+    if (tenancy === 'default') this.filterByTenant(client, query)
     query = query.whereNot('state', 'deleted');
     return query.where(key, value).catch(e => {
       throw DBException(e)

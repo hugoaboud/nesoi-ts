@@ -66,7 +66,7 @@ export default class Builder<T, S extends Schema> {
         }
 
         try {
-            const res = await link.resource.readOne(client, id, true);
+            const res = await link.resource.readOne(client, id, true, link.tenancy);
             if (!link.one_parser) return res;
             return link.one_parser(res);
         }
@@ -84,7 +84,7 @@ export default class Builder<T, S extends Schema> {
         link: GraphLink<R>
     ) {
         const fkey = link.fkey || this.machine.name('lower_snake') + '_id';
-        let res = await link.resource.readOneGroup(client, fkey as any, obj.id);
+        let res = await link.resource.readOneGroup(client, fkey as any, obj.id, link.tenancy);
         if (link.parser) {
             res = link.parser(res);
         }

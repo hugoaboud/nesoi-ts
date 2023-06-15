@@ -6,6 +6,7 @@
 
 import { Entity } from "..";
 import ResourceMachine from "../Machines/ResourceMachine";
+import { Tenancy } from "../Model";
 
 type Single<T> = T extends any[] ? T[number] : T
 
@@ -16,7 +17,7 @@ export class GraphLink<Type> {
         public resource: ResourceMachine<any,any>,
         public fkey?: string,
         public many = false,
-        public multi_tenancy = true,
+        public tenancy: Tenancy = 'default',
         public parser?: (entities: any) => any,
         public one_parser?: (entity: any) => any,
         public sorter?: (a: Single<Type>, b: Single<Type>) => number
@@ -38,8 +39,8 @@ export class GraphLink<Type> {
         return this;
     }
 
-    public noMultiTenancy() {
-        this.multi_tenancy = false;
+    public noTenancy() {
+        this.tenancy = 'no_tenancy';
         return this;
     }
 

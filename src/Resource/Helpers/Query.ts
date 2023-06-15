@@ -4,7 +4,7 @@ import { Status } from '../../Service';
 import { GraphLink } from '../Props/Graph';
 import { Client } from '../../Auth/Client';
 import { ReverseEnum } from '../../Util/Enum';
-import BaseModel from '../Model';
+import BaseModel, { Tenancy } from '../Model';
 import { Pagination } from './Pagination';
 
 type Operator = 'like'|'='|'>='|'<='|'in'
@@ -38,6 +38,7 @@ export class QueryBuilder<T> {
     protected sort?: Sort
     protected out?: Record<string,string>
     protected pagination?: Pagination
+    protected tenancy: Tenancy = 'default'
     
     constructor(
         protected client: Client,
@@ -76,6 +77,11 @@ export class QueryBuilder<T> {
 
     paginate(pagination: Pagination): QueryBuilder<T> {
         this.pagination = pagination;
+        return this;
+    }
+
+    noTenancy(): QueryBuilder<T> {
+        this.tenancy = 'no_tenancy';
         return this;
     }
 
@@ -175,6 +181,7 @@ export class Query {
     public res!: ResourceMachine<any,any>
     public service!: boolean
     public pagination?: Pagination
+    public tenancy: Tenancy = 'default'
 
     static async run(client: Client, builder: QueryBuilder<any>): Promise<BaseModel[]> {
         
@@ -183,7 +190,7 @@ export class Query {
         let query = model.query();
 
         if (client.trx) query.useTransaction(client.trx);
-        model.filterByTenant(client, query)
+        if (q.tenancy === 'default') model.filterByTenant(client, query)
 
         for (let r in q.rules) {
             let rule = q.rules[r];
