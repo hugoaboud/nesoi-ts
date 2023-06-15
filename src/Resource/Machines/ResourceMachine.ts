@@ -50,7 +50,7 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
 
     async readOne(client: Client, id: number, cache = false, tenancy: Tenancy = 'default'): Promise<T> {
         if (cache) {
-            return client.getCache().readOne(this, id) as any;
+            return client.getCache().readOne(this, id, tenancy) as any;
         }
         const obj = await this.readOneFromModel(client, this.$.Model, id, tenancy);
         if (!obj) throw Exception.NotFound(this, id);
