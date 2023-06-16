@@ -123,11 +123,7 @@ export abstract class StateMachine< T, S extends Schema > {
         obj.updated_at = DateTime.now();
         obj.updated_by = client.user.id;
         if (obj.state === 'deleted') {
-            await TrashModel.create({
-                table: this.$.Model.table,
-                obj,
-                deleted_by: client.user.id
-            }).catch((e: any) => {
+            await TrashModel.new(client, this.$.Model.table, obj).catch((e: any) => {
                 throw DBException(e)
             });
             await this.hardDelete(client, obj.id).catch(e => {
