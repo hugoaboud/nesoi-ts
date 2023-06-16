@@ -228,6 +228,7 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
         id: number
     ) {
         const obj = await this.readOneFromModel(client, this.$.Model, id);
+        if (!obj) throw Exception.NotFound(this, id);
         obj.useTransaction(client.trx);
         await obj.delete();
     }

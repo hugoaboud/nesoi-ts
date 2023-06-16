@@ -17,7 +17,7 @@ export default class TrashModel extends BaseModel {
   public obj!: Record<string, any>
 
   @column.dateTime({ autoCreate: true })
-  public deleted_at: DateTime
+  public deleted_at!: DateTime
 
   @column()
   public deleted_by?: number

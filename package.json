@@ -1,7 +1,7 @@
 {
   "name": "nesoi-ts",
-  "version": "0.3.3",
-  "description": "Micro-framework for quick development of distributed architectures.",
+  "version": "0.4.0",
+  "description": "State Machine based API development.",
   "repository": "https://github.com/hugoaboud/nesoi-ts.git",
   "author": "Hugo Aboud <hugoaboud@gmail.com>",
   "license": "MIT",
