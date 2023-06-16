@@ -210,7 +210,7 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
         return model.readOneGroup(client, key, value, tenancy) as Promise<Model<S>[]>;
     }
 
-    async save(
+    protected async save(
         client: Client,
         obj: Model<S>,
         create: boolean
@@ -221,6 +221,15 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
         obj.useTransaction(client.trx);
         await obj.save();
         await obj.refresh();
+    }
+
+    protected async hardDelete(
+        client: Client,
+        id: number
+    ) {
+        const obj = await this.readOneFromModel(client, this.$.Model, id);
+        obj.useTransaction(client.trx);
+        await obj.delete();
     }
 
 }

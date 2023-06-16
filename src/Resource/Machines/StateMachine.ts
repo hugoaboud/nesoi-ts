@@ -9,6 +9,7 @@ import { TransitionGuard } from "../Types/Transition";
 import Builder from "../Helpers/Builder";
 import Validator from "../Helpers/Validator";
 import DBException from "../../Exception/DBException";
+import TrashModel from "../../Database/Models/TrashModel";
 
 /**
     [State Machine]
@@ -122,12 +123,22 @@ export abstract class StateMachine< T, S extends Schema > {
         obj.updated_at = DateTime.now();
         obj.updated_by = client.user.id;
         if (obj.state === 'deleted') {
-            obj.deleted_at = DateTime.now();
-            obj.deleted_by = client.user.id;
+            await TrashModel.create({
+                table: this.$.Model.table,
+                obj,
+                deleted_by: client.user.id
+            }).catch((e: any) => {
+                throw DBException(e)
+            });
+            await this.hardDelete(client, obj.id).catch(e => {
+                throw DBException(e)
+            });
         }
-        await this.save(client, obj, t === 'create').catch(e => {
-            throw DBException(e)
-        });
+        else {
+            await this.save(client, obj, t === 'create').catch(e => {
+                throw DBException(e)
+            });
+        }
 
         const last = client.getAction(-2);
         const origin = last ? last.machine.name() + '.' + (last.transition as string) : ''
@@ -172,6 +183,11 @@ export abstract class StateMachine< T, S extends Schema > {
         obj: Model<S>,
         create: boolean
     ): Promise<void>   
+
+    protected abstract hardDelete(
+        client: Client,
+        id: number
+    ): Promise<void>
 
     /* Build */
 
