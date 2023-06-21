@@ -30,6 +30,8 @@ export default class TrashModel extends BaseModel {
         obj_id: obj.id,
         obj,
         deleted_by: client.user.id
+    }, {
+      client: client.trx
     }).catch((e: any) => {
         throw DBException(e)
     });
