@@ -1,3 +1,5 @@
+
+import { File } from "buffer";
 import { Client } from "../../Auth/Client";
 import { isEmpty } from "../../Util/Validator";
 import { InputValidator } from "../../Validator/InputValidator";
@@ -67,7 +69,7 @@ export default class Validator<S extends Schema> {
             if (!prop) return;
             if (Array.isArray(prop))
                 return prop.forEach((i:any) => this.filterInternalKeys(i));
-            if (typeof prop === 'object')
+            if (typeof prop === 'object' && !prop.isMultipartFile)
                 return this.filterInternalKeys(prop);
             if (key.startsWith('__') && key.endsWith('__'))
                 delete input[key];
