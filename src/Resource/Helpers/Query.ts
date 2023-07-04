@@ -26,6 +26,7 @@ interface Sort {
 interface Param {
     path: ResourceMachine<any,any>[]
     param: string,
+    fkey?: string,
     op: Operator,
     value: Value
 }
@@ -90,7 +91,8 @@ export class QueryBuilder<T> {
         param_path: string,
         op: Operator,
         value: Value,
-        path?: ResourceMachine<any,any>[]
+        path?: ResourceMachine<any,any>[],
+        fkey?: string
     ): Param {
         if (this.service) {
             return {
@@ -109,12 +111,13 @@ export class QueryBuilder<T> {
                     const child_param = param_path.slice(param.length+1);
                     if (!child_param.length) throw Exception.InvalidParam(param_path);
                     const child_path = (path || []).concat([child_res]);
-                    return this.parseParam(child_res, child_param, op, value, child_path);
+                    return this.parseParam(child_res, child_param, op, value, child_path, param_path);
                 }
                 // TODO: check types, enum, date, etc
                 return { 
                     path: path || [],
                     param: param,
+                    fkey: fkey,
                     op,
                     value
                 };
@@ -227,7 +230,7 @@ export class Query {
         const builder = (res.query(client) as any).addRule([param]) as QueryBuilder<any>;
         const rows = await this.run(client, builder);
 
-        let fkey_child = res.name('lower_snake') + '_id';
+        let fkey_child = param.fkey!;
 
         // Parent stores reference to child id
         if (parent.$.Model.$hasColumn(fkey_child)) {
