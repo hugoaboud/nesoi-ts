@@ -119,7 +119,7 @@ export class InputValidator {
         }
 
         if (prop.required === false || requiredWhen.length) {
-            if (p === 'enumSet')
+            if (prop.type === 'enum')
                 validator = validator.optional(prop.options, requiredWhen);
             else if (prop.type === 'file' && !prop.list)
                 validator = validator.optional(prop.fileSettings, requiredWhen);
