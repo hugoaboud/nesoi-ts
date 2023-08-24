@@ -153,7 +153,7 @@ export class InputProp<T,L> {
                 const model = machine.$.Model as typeof BaseModel;
                 let entries = await model.readOneGroup(client, cols[0], input[k], tenancy);
                 cols.forEach(col => {
-                    entries = entries.filter((e:any) => e[col] === input[col])
+                    entries = entries.filter((e:any) => e[col] === input[col] && e.id !== input.id)
                 })
                 return entries.length == 0;
             }) as any,
