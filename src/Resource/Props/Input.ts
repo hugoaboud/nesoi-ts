@@ -33,13 +33,13 @@ export class InputProp<T,L> {
     protected name!: string
     protected required?: boolean | InputRequiredWhen = true
     protected default_value?: T
-    protected rules: InputRule[] = []
     protected scope: InputScope = 'public';
     protected log = true;
 
     constructor(
         protected alias: string,
         protected type: InputType,
+        protected rules: InputRule[] = [],
         protected list?: boolean,
         protected members?: InputSchema,
         protected options?: readonly string[],
@@ -58,7 +58,7 @@ export class InputProp<T,L> {
 
     
     array() {
-        let prop = new InputProp<T[], L extends never ? never : L[]>(this.alias, this.type, true, this.members, this.options, this.child, this.fileSettings);
+        let prop = new InputProp<T[], L extends never ? never : L[]>(this.alias, this.type, this.rules, true, this.members, this.options, this.child, this.fileSettings);
         return prop;
     }
 
@@ -75,12 +75,12 @@ export class InputProp<T,L> {
         return this;        
     }
     optional() {
-        let prop = new InputProp<T|undefined, L extends never ? never : L|undefined>(this.alias, this.type, this.list, this.members, this.options, this.child);
+        let prop = new InputProp<T|undefined, L extends never ? never : L|undefined>(this.alias, this.type, this.rules, this.list, this.members, this.options, this.child);
         prop.required = false;
         return prop;
     }
     requiredIf(param: string, value: string|boolean|number = true) {
-        let prop = new InputProp<T|undefined, L extends never ? never : L|undefined>(this.alias, this.type, this.list, this.members, this.options, this.child);
+        let prop = new InputProp<T|undefined, L extends never ? never : L|undefined>(this.alias, this.type, this.rules, this.list, this.members, this.options, this.child);
         prop.required = { param, value };
         return prop;
     }
@@ -229,33 +229,33 @@ export function $(alias: string) {
         id: <R extends ResourceMachine<any,any>>
             (resource: R) =>
                 new InputProp<number, Entity<R>>(
-                    alias, 'id', false,
+                    alias, 'id', [], false,
                     undefined, undefined, resource
                 ),
         enum: <T extends readonly string[]>
             (options: T) =>
                 new InputProp<T[number], never>(
-                    alias, 'enum', false, undefined, options
+                    alias, 'enum', [], false, undefined, options
                 ),
         object: <T extends InputSchema>
             (members: T) =>
                 new InputProp<{[k in keyof T]: InputPropType<T[k]>}, never>(
-                    alias, 'object', false, members
+                    alias, 'object', [], false, members
                 ),
         resource: <R extends ResourceMachine<any,any>>
             (_: R) =>
                 new InputProp<Entity<R>, Entity<R>>(
-                    alias, 'object', false, {}
+                    alias, 'object', [], false, {}
                 ),
         transition: <R extends ResourceMachine<any,any>, T extends keyof R['$']['Transitions']>
             (resource: R, transition: T) =>
                 new InputProp<Input<R['$'],T>, never>(
-                    alias, 'transition', false,
+                    alias, 'transition', [], false,
                     resource.$.Transitions[transition].input, undefined, resource
                 ),
         file: (max_size: string, extnames: string[]) =>
             new InputProp<MultipartFileContract, never>(
-                alias, 'file', false,
+                alias, 'file', [], false,
                 undefined, undefined, undefined, {
                     size: max_size,
                     extnames
