@@ -34,7 +34,7 @@ export abstract class BaseController {
             const path = process.cwd()+'/app/Controllers/Http/'+this.name;
             const { default: Controller } = await import(path);
             const controller = new Controller() as BaseController;
-            return controller.guard(ctx, schema.trx, (controller as any)[key]);
+            return controller.guard(ctx, schema, (controller as any)[key]);
         }
 
         const path = schema.path + (suffix || '')
@@ -69,11 +69,11 @@ export abstract class BaseController {
     }
 
     /** Setup client and transaction for the route */
-    async guard(ctx: HttpContextContract, trx = true, fn: (ctx: HttpContextContract) => Promise<any>) {
+    async guard(ctx: HttpContextContract, schema: ControllerEndpoint, fn: (ctx: HttpContextContract) => Promise<any>) {
 
         this.client = (ctx as any).client;
         
-        if (!trx) return fn.bind(this)(ctx);
+        if (!schema.trx) return fn.bind(this)(ctx);
 
         return Database.transaction(async trx => {
             this.client.trx = trx;

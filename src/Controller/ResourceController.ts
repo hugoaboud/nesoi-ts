@@ -33,7 +33,7 @@ export function ResourceController<T,S extends Schema>(
         
         pagination?: Pagination
 
-        async guard(ctx: HttpContextContract, trx = true, fn: (ctx: HttpContextContract) => Promise<any>) {
+        async guard(ctx: HttpContextContract, schema: ControllerEndpoint, fn: (ctx: HttpContextContract) => Promise<any>) {
 
             const qs = ctx.request.qs();
 
@@ -47,7 +47,7 @@ export function ResourceController<T,S extends Schema>(
                 this.pagination = new Pagination(parseInt(qs.page), parseInt(qs.per_page), order);
             }
 
-            return super.guard(ctx, trx, fn);
+            return super.guard(ctx, schema, fn);
         }
 
         async readAll(ctx: HttpContextContract) {

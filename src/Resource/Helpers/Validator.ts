@@ -1,5 +1,4 @@
 
-import { File } from "buffer";
 import { Client } from "../../Auth/Client";
 import { isEmpty } from "../../Util/Validator";
 import { InputValidator } from "../../Validator/InputValidator";
