@@ -154,6 +154,7 @@ export function ResourceController<T,S extends Schema>(
                 const t_auth = t.auth || auth;
                 
                 this.$endpoints[t_name] = {
+                    method: t_name,
                     verb: 'post', path: t_path,
                     auth: t_auth, version, middlewares: []
                 } as any
