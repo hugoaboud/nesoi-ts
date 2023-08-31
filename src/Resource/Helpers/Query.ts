@@ -208,7 +208,12 @@ export class Query {
 
             query.where(query => {
                 qrule.forEach(rule => 
-                    query.orWhere(rule[0], rule[1], rule[2])
+                    rule[1] === 'like'
+                        // LIKE is case insensitive
+                        ? query.orWhereILike(rule[0], rule[2])
+                        // other ops are case sensitive
+                        : query.orWhere(rule[0], rule[1], rule[2])
+                        // TODO: Make it optional
                 )
             });
         }
