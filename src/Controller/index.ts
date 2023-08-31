@@ -9,6 +9,7 @@ import { Middleware } from '../Middleware';
 import { Config } from '../Config';
 
 export interface ControllerEndpoint {
+    method: string
     verb: Verb
     path: string
     version: string
@@ -93,6 +94,7 @@ export abstract class BaseController {
         let controller = (target.constructor as typeof BaseController);
         if (!controller.$endpoints) controller.$endpoints = {}
         controller.$endpoints[key] = {
+            method: key,
             verb,
             path: controller.route+(path?('/'+path):''),
             version,

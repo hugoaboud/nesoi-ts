@@ -89,16 +89,19 @@ export function ResourceController<T,S extends Schema>(
             let path = '/' + this.route;
 
             this.$endpoints['readAll'] = {
+                method: 'readAll',
                 verb: 'get', path: path,
                 auth, trx: true, version, middlewares: []
             }
 
             this.$endpoints['readOne'] = {
+                method: 'readOne',
                 verb: 'get', path: path+'/:id',
                 auth, trx: true, version, middlewares: []
             }
 
             this.$endpoints['query'] = {
+                method: 'query',
                 verb: 'post', path: path + Config.get('Routing').query_route,
                 auth, trx: true, version, middlewares: []
             }
@@ -111,6 +114,7 @@ export function ResourceController<T,S extends Schema>(
                 const t = transitions.find(t => t.transition == 'create')
                 const t_auth = t!.auth || auth
                 this.$endpoints['create'] = {
+                    method: 'create',
                     verb: 'post', path,
                     auth: t_auth, trx: true, version, middlewares: []
                 }
@@ -123,6 +127,7 @@ export function ResourceController<T,S extends Schema>(
                 const t = transitions.find(t => t.transition == 'edit')
                 const t_auth = t!.auth || auth
                 this.$endpoints['edit'] = {
+                    method: 'edit',
                     verb: Config.get('Routing').edit_verb, path: path+'/:id',
                     auth: t_auth, trx: true, version, middlewares: []
                 }
@@ -135,6 +140,7 @@ export function ResourceController<T,S extends Schema>(
                 const t = transitions.find(t => t.transition == 'delete')
                 const t_auth = t!.auth || auth
                 this.$endpoints['delete'] = {
+                    method: 'delete',
                     verb: 'delete', path: path+'/:id',
                     auth: t_auth, trx: true, version, middlewares: []
                 }
