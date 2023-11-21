@@ -7,10 +7,11 @@ import { ReverseEnum } from '../../Util/Enum';
 import BaseModel, { Tenancy } from '../Model';
 import { Pagination } from './Pagination';
 
-type Operator = 'like'|'='|'>='|'<='|'in'
+type Operator = 'like'|'ilike'|'='|'>='|'<='|'in'
 type Value = string|number|string[]|number[]
 enum OpRansackToRule {
     cont = 'like',
+    i_cont = 'ilike',
     eq = '=',
     gteq = '>=',
     lteq = '<=',
@@ -139,7 +140,7 @@ export class QueryBuilder<T> {
         const query = new QueryBuilder(client, res);
         for (let rule in q) {
             if (rule === 's') continue;
-            const [_,params,op] = rule.match(/(.*)_(.*)/) || [];
+            const [_,params,op] = rule.match(/(.+?)_((i_)?[^_]*)$/) || [];
             if (!params) throw Exception.MalformedQuery();
             if (!OpRansackToRule[op as never]) throw Exception.UnknownOperator(op);
             query.rule(
@@ -202,19 +203,22 @@ export class Query {
                 let param = rule[p];
                 await this.walk(client, q.res, param);
                 // TODO: array columns
-                if (param.op === 'like') param.value = '%'+param.value+'%';
+                if (param.op === 'like' || param.op === 'ilike') {
+                    param.value = '%'+param.value+'%';
+                }
                 qrule.push([param.param, param.op, param.value]);
             }
 
             query.where(query => {
-                qrule.forEach(rule => 
-                    rule[1] === 'like'
-                        // LIKE is case insensitive
-                        ? query.orWhereILike(rule[0], rule[2])
-                        // other ops are case sensitive
-                        : query.orWhere(rule[0], rule[1], rule[2])
-                        // TODO: Make it optional
-                )
+                qrule.forEach(rule => {
+                    if (rule[1] === 'like') {
+                        query.orWhereLike(rule[0], rule[2])
+                    } else if (rule[1] === 'ilike') {
+                        query.orWhereILike(rule[0], rule[2])
+                    } else {
+                        query.orWhere(rule[0], rule[1], rule[2])
+                    }
+                })
             });
         }
 
