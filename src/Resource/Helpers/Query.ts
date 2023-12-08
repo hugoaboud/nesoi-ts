@@ -7,11 +7,12 @@ import { ReverseEnum } from '../../Util/Enum';
 import BaseModel, { Tenancy } from '../Model';
 import { Pagination } from './Pagination';
 
-type Operator = 'like'|'='|'>='|'<='|'in'
+type Operator = 'like'|'='|'>='|'<='|'in'|'<>'
 type Value = string|number|string[]|number[]
 enum OpRansackToRule {
     cont = 'like',
     eq = '=',
+    not_eq = '<>',
     gteq = '>=',
     lteq = '<=',
     in = 'in'
