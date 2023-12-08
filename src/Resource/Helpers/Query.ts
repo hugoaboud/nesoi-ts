@@ -140,7 +140,7 @@ export class QueryBuilder<T> {
         const query = new QueryBuilder(client, res);
         for (let rule in q) {
             if (rule === 's') continue;
-            const [_,params,op] = rule.match(/(.*)_(.*)/) || [];
+            const [_,params,op] = rule.match(/(.+?)_((i_)?[^_]*)$/) || [];
             if (!params) throw Exception.MalformedQuery();
             if (!OpRansackToRule[op as never]) throw Exception.UnknownOperator(op);
             query.rule(
