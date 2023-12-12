@@ -117,7 +117,8 @@ export class QueryBuilder<T> {
                 // TODO: check types, enum, date, etc
                 if (prop.type === 'object') {
                     // jsonb search
-                    param = param_path.replace(/\.(\w*)/g,"->>'$1'")
+                    param = param_path.replace(/\.(\w*)/g,"->'$1'")
+                    param = param.replace(/(.*)->/g,"$1->>")
                 }
                 return { 
                     path: path || [],
