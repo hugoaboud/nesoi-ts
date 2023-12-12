@@ -1,6 +1,6 @@
 {
   "name": "nesoi-ts",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "State Machine based API development.",
   "repository": "https://github.com/hugoaboud/nesoi-ts.git",
   "author": "Hugo Aboud <hugoaboud@gmail.com>",

@@ -115,6 +115,10 @@ export class QueryBuilder<T> {
                     return this.parseParam(child_res, child_param, op, value, child_path, param_path);
                 }
                 // TODO: check types, enum, date, etc
+                if (prop.type === 'object') {
+                    // jsonb search
+                    param = param_path.replace(/\.(\w*)/g,"->>'$1'")
+                }
                 return { 
                     path: path || [],
                     param: param,
@@ -123,7 +127,7 @@ export class QueryBuilder<T> {
                     value
                 };
             }
-            let [_,less] = param.match(/(.*)_/) || []
+            let [_,less] = param.match(/(.*)[_\.]/) || []
             param = less;
         }
         throw Exception.InvalidParam(param_path);
@@ -209,12 +213,15 @@ export class Query {
 
             query.where(query => {
                 qrule.forEach(rule => 
-                    rule[1] === 'like'
-                        // LIKE is case insensitive
-                        ? query.orWhereILike(rule[0], rule[2])
-                        // other ops are case sensitive
-                        : query.orWhere(rule[0], rule[1], rule[2])
-                        // TODO: Make it optional
+                    rule[0].includes('->>')
+                    // jsonb search
+                    ?   query.orWhereRaw(`${rule[0]} ${rule[1]} '${rule[2]}'`)
+                    :   rule[1] === 'like'
+                            // LIKE is case insensitive
+                            ? query.orWhereILike(rule[0], rule[2])
+                            // other ops are case sensitive
+                            : query.orWhere(rule[0], rule[1], rule[2])
+                            // TODO: Make it optional
                 )
             });
         }
