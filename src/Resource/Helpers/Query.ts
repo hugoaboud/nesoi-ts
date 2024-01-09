@@ -216,7 +216,9 @@ export class Query {
                 qrule.forEach(rule => 
                     rule[0].includes('->>')
                     // jsonb search
-                    ?   query.orWhereRaw(`${rule[0]} ${rule[1]} '${rule[2]}'`)
+                    ?   (rule[1] === 'in'
+                        ? query.orWhereRaw(`${rule[0]} ${rule[1]} (${rule[2].map((r: any) => `'${r}'`).join(',')})`)
+                        : query.orWhereRaw(`${rule[0]} ${rule[1]} '${rule[2]}'`))
                     :   rule[1] === 'like'
                             // LIKE is case insensitive
                             ? query.orWhereILike(rule[0], rule[2])
