@@ -32,4 +32,21 @@ export default class Cache {
 
     }
 
+    async readOneFromModel(model: LucidModel, id: number) {
+
+        const name = 'model.' + model.name;
+        
+        this.cache[name] = this.cache[name] || {};
+        
+        if (!(id in this.cache[name])) {
+            this.cache[name][id] = model.find(id) as any;
+        }
+        else {
+            Logger.info(`(cache) ${name} id:${id}`);
+        }
+
+        return this.cache[name][id];
+
+    }
+
 }
