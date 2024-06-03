@@ -77,6 +77,7 @@ export default class ResourceMachine< T, S extends Schema > extends StateMachine
 
     protected async runQuery(client: Client, query: QueryBuilder<T>): Promise<T[]> {
         const objs = await Query.run(client, query);
+        client.getCache().injectModelObjs(this.$.Model, objs);
         return this.buildAll(client, objs as any);
     }
 
