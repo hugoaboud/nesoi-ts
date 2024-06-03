@@ -32,7 +32,7 @@ export default class Cache {
 
     }
 
-    async injectModelObjs(model: LucidModel, objs: Record<string, any>[]) {
+    async injectModelObjs(model: any, objs: Record<string, any>[]) {
         const name = 'model.' + model.name;
         this.cache[name] = this.cache[name] || {};
         for (let i = 0; i < objs.length; i++) {
@@ -41,7 +41,7 @@ export default class Cache {
         }
     }
 
-    async readOneFromModel(model: LucidModel, id: number) {
+    async readOneFromModel(model: any, id: number) {
 
         const name = 'model.' + model.name;
         
