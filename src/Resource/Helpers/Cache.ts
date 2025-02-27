@@ -32,4 +32,30 @@ export default class Cache {
 
     }
 
+    async injectModelObjs(model: any, objs: Record<string, any>[]) {
+        const name = 'model.' + model.name;
+        this.cache[name] = this.cache[name] || {};
+        for (let i = 0; i < objs.length; i++) {
+            const obj = objs[i];
+            this.cache[name][obj.id] = obj as any;
+        }
+    }
+
+    async readOneFromModel(model: any, id: number) {
+
+        const name = 'model.' + model.name;
+        
+        this.cache[name] = this.cache[name] || {};
+        
+        if (!(id in this.cache[name])) {
+            this.cache[name][id] = model.find(id) as any;
+        }
+        else {
+            Logger.info(`(cache) ${name} id:${id}`);
+        }
+
+        return this.cache[name][id];
+
+    }
+
 }

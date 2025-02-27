@@ -10,7 +10,7 @@
     "scripts/**/*"
   ],
   "scripts": {
-    "prepare": "ts-node scripts/prepare",
+    "prepare": "npx tsx scripts/prepare",
     "manage:resource": "ts-node src/CLI/Manager/ResourceManager"
   },
   "devDependencies": {
