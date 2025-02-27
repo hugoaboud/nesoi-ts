@@ -156,7 +156,7 @@ export function ResourceController<T,S extends Schema>(
                 this.$endpoints[t_name] = {
                     method: t_name,
                     verb: 'post', path: t_path,
-                    auth: t_auth, version, middlewares: []
+                    auth: t_auth, trx: true, version, middlewares: []
                 } as any
 
                 (this.prototype as any)[t_name] = 
